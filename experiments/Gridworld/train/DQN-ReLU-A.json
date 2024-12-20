@@ -1,7 +1,7 @@
 {
     "agent": "DQN-ReLU-A",
     "problem": "Gridworld",
-    "total_steps": 10000,
+    "total_steps": 30000,
     "episode_cutoff": 100,
     "metaParameters": {
         "epsilon": 0.1,

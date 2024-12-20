@@ -25,12 +25,12 @@ from experiment.tools import parseCmdLineArgs
 setDefaultConference('jmlr')
 
 COLORS = {
-    'DQN-ReLU-A': 'blue',
-    'DQN-ReLU-B': 'red',
+    'DQN-ReLU-A': 'red',
+    'DQN-ReLU-B': 'green',
 }
 
 # keep 1 in every SUBSAMPLE measurements
-SUBSAMPLE = 100   
+SUBSAMPLE = 1   
 
 if __name__ == "__main__":
     path, should_save, save_type = parseCmdLineArgs()
@@ -78,7 +78,19 @@ if __name__ == "__main__":
                 time_summary=TimeSummary.sum,
                 statistic=Statistic.mean,
             )
-            print(sub_df)
+
+            #-------------------------------------#
+            # Some quick analysis (temp)
+            #rows_with = sub_df.index[sub_df['return'] == 1].tolist()
+            #frames_at_return_1 = sub_df.loc[rows_with_return_1, 'frame'].tolist()
+            #print(f"List of 'frame' values where 'return' is 1: {frames_at_return_1}")
+            return_0 = sub_df.index[sub_df['return'] == 0].tolist()
+            return_1 = sub_df.index[sub_df['return'] == 1].tolist()
+            print(f"num of 0 return: {len(return_0)}")
+            print(f"num of 1 return: {len(return_1)}")
+            print(f"num of nan return: {len(sub_df['return'].tolist()) - len(return_0) - len(return_1)}")
+            #-------------------------------------#
+
             print('-' * 25)
             print(env, alg)
             Hypers.pretty_print(report)
@@ -87,7 +99,8 @@ if __name__ == "__main__":
                 sub_df,
                 report.uncertainty_set_configurations,
                 metric='return',
-                interpolation=lambda x, y: compute_step_return(x, y, exp.total_steps),
+                #interpolation=lambda x, y: compute_step_return(x, y, exp.total_steps),
+                interpolation=None,
             )
 
             xs = np.asarray(xs)[:, ::SUBSAMPLE]
