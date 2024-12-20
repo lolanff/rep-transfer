@@ -12,7 +12,7 @@ env/
 .venv/
 __pycache__
 *.pyc
-
+.cache
 .pdm-python
 pdm.lock
 
@@ -26,3 +26,6 @@ test.json
 build
 build/
 **.egg-info/
+
+# ignore bash history
+.bash_history
