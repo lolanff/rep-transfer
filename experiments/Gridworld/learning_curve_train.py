@@ -84,11 +84,11 @@ if __name__ == "__main__":
             #rows_with = sub_df.index[sub_df['return'] == 1].tolist()
             #frames_at_return_1 = sub_df.loc[rows_with_return_1, 'frame'].tolist()
             #print(f"List of 'frame' values where 'return' is 1: {frames_at_return_1}")
-            return_0 = sub_df.index[sub_df['return'] == 0].tolist()
-            return_1 = sub_df.index[sub_df['return'] == 1].tolist()
-            print(f"num of 0 return: {len(return_0)}")
-            print(f"num of 1 return: {len(return_1)}")
-            print(f"num of nan return: {len(sub_df['return'].tolist()) - len(return_0) - len(return_1)}")
+            #return_0 = sub_df.index[sub_df['return'] == 0].tolist()
+            #return_1 = sub_df.index[sub_df['return'] == 1].tolist()
+            #print(f"num of 0 return: {len(return_0)}")
+            #print(f"num of 1 return: {len(return_1)}")
+            #print(f"num of nan return: {len(sub_df['return'].tolist()) - len(return_0) - len(return_1)}")
             #-------------------------------------#
 
             print('-' * 25)

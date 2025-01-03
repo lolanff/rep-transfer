@@ -5,8 +5,10 @@ results.tar
 .tmp/
 *.out
 
-# ignore python caches
+# ignore apptainer images
 *.sif
+
+# ignore python caches
 ENV/
 env/
 .venv/

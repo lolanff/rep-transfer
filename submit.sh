@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --time=00-23:59
 #SBATCH --mem=4000M
 #SBATCH --account=def-whitem
