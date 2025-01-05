@@ -81,6 +81,12 @@ if __name__ == "__main__":
 
             #-------------------------------------#
             # Some quick analysis (temp)
+            #unique_seeds = sub_df['seed'].value_counts()
+            #print(f'unique seeds {unique_seeds}')
+            #unique_alphas = sub_df['optimizer.alpha'].value_counts()
+            #print(f'unique alphas {unique_alphas}')
+            #unique_configs = sub_df['config_id'].value_counts()
+            #print(f'unique config id {unique_configs}')
             #rows_with = sub_df.index[sub_df['return'] == 1].tolist()
             #frames_at_return_1 = sub_df.loc[rows_with_return_1, 'frame'].tolist()
             #print(f"List of 'frame' values where 'return' is 1: {frames_at_return_1}")
