@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --time=00-23:59
-#SBATCH --mem=4000M
+#SBATCH --mem=8G
 #SBATCH --account=def-whitem
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=anffany@ualberta.ca

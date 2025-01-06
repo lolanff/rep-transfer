@@ -81,10 +81,10 @@ if __name__ == "__main__":
 
             #-------------------------------------#
             # Some quick analysis (temp)
-            #unique_seeds = sub_df['seed'].value_counts()
-            #print(f'unique seeds {unique_seeds}')
-            #unique_alphas = sub_df['optimizer.alpha'].value_counts()
-            #print(f'unique alphas {unique_alphas}')
+            unique_seeds = sub_df['seed'].value_counts()
+            print(f'unique seeds {unique_seeds}')
+            unique_alphas = sub_df['optimizer.alpha'].value_counts()
+            print(f'unique alphas {unique_alphas}')
             #unique_configs = sub_df['config_id'].value_counts()
             #print(f'unique config id {unique_configs}')
             #rows_with = sub_df.index[sub_df['return'] == 1].tolist()
