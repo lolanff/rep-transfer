@@ -58,7 +58,7 @@ class DQN(NNAgent):
 
     # internal compiled version of the value function
     @partial(jax.jit, static_argnums=0)
-    def _values(self, state: AgentState, x: jax.Array):
+    def _values(self, state: AgentState, x: jax.Array): # type: ignore
         phi = self.phi(state.params, x).out
         return self.q(state.params, phi)
 

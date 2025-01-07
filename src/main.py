@@ -91,6 +91,13 @@ for idx in indices:
     glue = chk.build('glue', lambda: RlGlue(agent, env))
     chk.initial_value('episode', 0)
 
+    # Load nn parameters from checkpoint
+    load_params = problem.exp_params.get("load", {})
+    if isinstance(load_params, dict):
+        loaded_chk = Checkpoint(exp, run, base_path=args.checkpoint_path, load_path=load_params['path'])
+        loaded_chk.load()
+        chk.load_from_checkpoint(loaded_chk, load_params.get("config"))
+
     # Run the experiment
     start_time = time.time()
 
@@ -130,4 +137,4 @@ for idx in indices:
     # -- Saving --
     # ------------
     saveCollector(exp, collector, base=args.save_path)
-    chk.delete()
+    chk.save()

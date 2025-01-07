@@ -29,8 +29,8 @@ COLORS = {
     'DQN-ReLU-B': 'green',
 }
 
-# keep 1 in every SUBSAMPLE measurements
-SUBSAMPLE = 1   
+# keep N in every SUBSAMPLE measurements
+SUBSAMPLE = 100   
 
 if __name__ == "__main__":
     path, should_save, save_type = parseCmdLineArgs()
@@ -105,8 +105,8 @@ if __name__ == "__main__":
                 sub_df,
                 report.uncertainty_set_configurations,
                 metric='return',
-                #interpolation=lambda x, y: compute_step_return(x, y, exp.total_steps),
-                interpolation=None,
+                interpolation=lambda x, y: compute_step_return(x, y, exp.total_steps),
+                #interpolation=None,
             )
 
             xs = np.asarray(xs)[:, ::SUBSAMPLE]

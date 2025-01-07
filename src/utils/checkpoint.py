@@ -4,14 +4,17 @@ import time
 import shutil
 import pickle
 import logging
-from typing import Any, Callable, Dict, Optional, Sequence, Type, TypeVar, Protocol
+import lzma
+from copy import deepcopy
+from typing import Any, Callable, Dict, Optional, Self, Sequence, Type, TypeVar, Protocol
 from PyExpUtils.models.ExperimentDescription import ExperimentDescription
+from PyExpUtils.FileSystemContext import FileSystemContext
 
 T = TypeVar('T')
 Builder = Callable[[], T]
 
 class Checkpoint:
-    def __init__(self, exp: ExperimentDescription, idx: int, base_path: str = './', save_every: float = -1) -> None:
+    def __init__(self, exp: ExperimentDescription, idx: int, base_path: str = './', load_path: str | None = None, save_every: float = -1) -> None:
         self._storage: Dict[str, Any] = {}
         self._exp = exp
         self._idx = idx
@@ -19,12 +22,16 @@ class Checkpoint:
         self._last_save: Optional[float] = None
         self._save_every = save_every * 60
 
-        self._ctx = self._exp.buildSaveContext(idx, base=base_path)
+        self._load_path = load_path
+        if load_path is None:
+            self._ctx = self._exp.buildSaveContext(idx, base=base_path)
+        else:
+            self._ctx = FileSystemContext(load_path, base_path)
 
         self._params = exp.getPermutation(idx)
         self._base_path = f'{idx}'
         self._params_path = f'{idx}/params.json'
-        self._data_path = f'{idx}/chk.pkl'
+        self._data_path = f'{idx}/chk.pkl.xz'
 
     def __getitem__(self, name: str):
         return self._storage[name]
@@ -57,7 +64,7 @@ class Checkpoint:
                 json.dump(self._params, f)
 
         data_path = self._ctx.ensureExists(self._data_path, is_file=True)
-        with open(data_path, 'wb') as f:
+        with lzma.open(data_path, 'wb') as f:
             pickle.dump(self._storage, f)
 
         logging.info('Finished dumping checkpoint')
@@ -85,7 +92,7 @@ class Checkpoint:
             with open(params_path, 'r') as f:
                 params = json.load(f)
 
-            assert params == self._params, 'The idx->params mapping has changed between checkpoints!!'
+            assert self._load_path or params == self._params, 'The idx->params mapping has changed between checkpoints!!'
 
         except Exception as e:
             print('Failed to load checkpoint')
@@ -93,7 +100,7 @@ class Checkpoint:
 
         path = self._ctx.resolve(self._data_path)
         try:
-            with open(path, 'rb') as f:
+            with lzma.open(path, 'rb') as f:
                 self._storage = pickle.load(f)
         except Exception as e:
             print(f'Failed to load checkpoint: {path}')
@@ -104,6 +111,28 @@ class Checkpoint:
             print('Found a checkpoint! Loading...')
             self.load()
 
+    def load_from_checkpoint(self, source: Self | dict | object, config: dict | None, target=None, debug_key=''):
+        if target is None:
+            target = self._storage
+
+        if isinstance(source, Checkpoint):
+            source = source._storage
+
+        if config is None:
+            if isinstance(source, Checkpoint):
+                self._storage = deepcopy(source._storage)
+            elif isinstance(source, dict):
+                self._storage = deepcopy(source)
+            return
+
+        for key, load_or_subconfig in config.items():
+            if isinstance(load_or_subconfig, dict):
+                subconfig = load_or_subconfig
+                self.load_from_checkpoint(get(source, key), subconfig, get(target, key), debug_key=f'{debug_key}.{key}')
+            else:
+                load = load_or_subconfig
+                if load:
+                    target[key] = deepcopy(get(source, key))
 
 class Checkpointable(Protocol):
     def __setstate__(self, state) -> None: ...
@@ -143,3 +172,8 @@ def checkpointable(props: Sequence[str]):
         return c
 
     return _inner
+
+def get(dict_or_obj: dict | object, key: str, default: T = None) -> T:
+    if isinstance(dict_or_obj, dict):
+        return dict_or_obj.get(key, default)
+    return getattr(dict_or_obj, key, default)

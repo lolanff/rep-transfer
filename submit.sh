@@ -9,5 +9,5 @@
 #SBATCH --output=test_train.out
 
 module load apptainer
-apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./tests/test_train.sh
+apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./scripts/DQN-ReLU-train.sh
 

@@ -1,11 +1,29 @@
 {
     "agent": "DQN-ReLU-A",
     "problem": "Gridworld",
-    "total_steps": 30000,
+    "total_steps": 200,
     "episode_cutoff": 100,
     "metaParameters": {
         "experiment": {
-            "load": false
+            "load": {
+                "path": "Gridworld-best/DQN-ReLU",
+                "config": {
+                    "a": {
+                        "buffer": false,
+                        "state": {
+                            "optim": false,
+                            "params": {
+                                "phi": true,
+                                "q": false
+                            },
+                            "target_params": {
+                                "phi": true,
+                                "q": false
+                            }
+                        }
+                    }
+                }
+            }
         },
         "epsilon": 0.1,
         "target_refresh": 64,

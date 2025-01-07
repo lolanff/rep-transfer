@@ -1,17 +1,19 @@
 # ignore all results
+checkpoints/
 results
 results/
 results.tar
 .tmp/
 *.out
 
-# ignore apptainer images
+# ignore apptainer images and virtual environments
 *.sif
-
-# ignore python caches
 ENV/
 env/
 .venv/
+
+# ignore python caches
+.pytest_cache
 __pycache__
 *.pyc
 .cache
