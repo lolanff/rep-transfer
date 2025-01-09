@@ -1,3 +1,4 @@
+from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Tuple
 from PyExpUtils.collection.Collector import Collector
@@ -39,10 +40,9 @@ class DQN(NNAgent):
         super().__init__(observations, actions, params, collector, seed)
         # set up the target network parameters
         self.target_refresh = params['target_refresh']
-
         self.state = AgentState(
             params=self.state.params,
-            target_params=self.state.params,
+            target_params=deepcopy(self.state.params), # without deepcopy, load_from_checkpoint overwrites params with target_params
             optim=self.state.optim,
         )
 
@@ -88,7 +88,7 @@ class DQN(NNAgent):
             self.collector.collect(k, np.mean(v).item())
 
         if self.updates % self.target_refresh == 0:
-            self.state.target_params = self.state.params
+            self.state.target_params = self.state.params   # deepcopy not needed here because optax.apply_updates produces a new pytree as params at each update, so params becomes unlinked from target_params
 
     # -------------
     # -- Updates --
@@ -112,6 +112,9 @@ class DQN(NNAgent):
     def _loss(self, params: hk.Params, target: hk.Params, batch: Batch, weights: jax.Array):
         phi = self.phi(params, batch.x).out
         phi_p = self.phi(target, batch.xp).out
+
+        if self.rep_params.get("frozen"):
+            phi = jax.lax.stop_gradient(phi)
 
         qs = self.q(params, phi)
         qsp = self.q(target, phi_p)
