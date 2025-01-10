@@ -6,7 +6,7 @@
     "metaParameters": {
         "experiment": {
             "load": {
-                "path": "Gridworld-best/DQN-ReLU",
+                "path": "results/Gridworld/E1/frozen/DQN-ReLU-A",
                 "config": {
                     "a": {
                         "buffer": false,
@@ -23,7 +23,8 @@
                         }
                     }
                 }
-            }
+            },
+            "seed_offset": 1000
         },
         "epsilon": 0.1,
         "target_refresh": 64,
@@ -38,13 +39,13 @@
         },
         "optimizer": {
             "name": "ADAM",
-            "alpha": [0.001, 0.0003, 0.0001, 0.00003, 0.00001],
+            "alpha": [0.001],
             "beta1": 0.9,
             "beta2": 0.999
         },
         "representation": {
             "type": "MazeNetReLU",
-            "hidden": 64,
+            "hidden": 32,
             "frozen": true
         },
         "environment": {

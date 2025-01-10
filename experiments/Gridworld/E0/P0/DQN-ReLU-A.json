@@ -1,13 +1,9 @@
 {
     "agent": "DQN-ReLU-A",
     "problem": "Gridworld",
-    "total_steps": 200,
+    "total_steps": 30000,
     "episode_cutoff": 100,
     "metaParameters": {
-        "experiment": {
-            "load": false,
-            "seed_offset": 0
-        },
         "epsilon": 0.1,
         "target_refresh": 64,
         "buffer_type": "uniform",
@@ -27,8 +23,7 @@
         },
         "representation": {
             "type": "MazeNetReLU",
-            "hidden": 32,
-            "frozen": false
+            "hidden": 64
         },
         "environment": {
             "goal_id": "A"

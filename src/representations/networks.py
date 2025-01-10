@@ -132,7 +132,7 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
                 hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv_1'),
                 jax.nn.relu,
                 hk.Flatten(name='flatten'),
-                hk.Linear(32, w_init=w_init, name='linear'),
+                hk.Linear(hidden, w_init=w_init, name='linear'),
                 jax.nn.relu,
                 hk.Flatten(name='phi'),
             ]

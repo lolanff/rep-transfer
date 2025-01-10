@@ -5,9 +5,9 @@
 #SBATCH --account=def-whitem
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=anffany@ualberta.ca
-#SBATCH --job-name=test_train
-#SBATCH --output=test_train.out
+#SBATCH --job-name=E0-P1
+#SBATCH --output=E0-P1.out
 
 module load apptainer
-apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./scripts/DQN-ReLU-train.sh
+apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./scripts/E0-P1.sh
 

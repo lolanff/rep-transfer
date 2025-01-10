@@ -1,1 +1,4 @@
-Experiments for examining the feature representations learned by a RL agent with a recurrent neural network.
+Transferable Neural Network Representations in Reinforcement Learning
+=====================
+
+This repository is adapted from andnp/rl-control-template and steventango/sparse-feature-transfer.

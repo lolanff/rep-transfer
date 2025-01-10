@@ -80,11 +80,14 @@ for idx in indices:
     collector.setIdx(idx)
     run = exp.getRun(idx)
 
-    # set random seeds accordingly
-    np.random.seed(run)
+    # set random seeds. add an offset for transfer tasks
+    params = exp.get_hypers(idx)
+    seed = run + params.get("experiment", {}).get("seed_offset", 0)
+    np.random.seed(seed)
 
     # build stateful things and attach to checkpoint
     problem = chk.build('p', lambda: Problem(exp, idx, collector))
+    problem.seed = seed
     agent = chk.build('a', problem.getAgent)
     env = chk.build('e', problem.getEnvironment)
 

@@ -12,7 +12,7 @@ from utils.checkpoint import Checkpoint
 
 class TestCheckpoint:
     def test_load_from_checkpoint_agent(self):
-        exp = ExperimentModel.load("experiments/Gridworld/train/DQN-ReLU-A.json")
+        exp = ExperimentModel.load("experiments/Gridworld/E1/train/DQN-ReLU-A.json")
 
         idx = 0
         Problem = getProblem(exp.problem)

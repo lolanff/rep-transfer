@@ -51,9 +51,8 @@ class DQN(NNAgent):
     # ------------------------
     def _build_heads(self, builder: NetworkBuilder) -> None:
         #self.q = builder.addHead(lambda: hk.Linear(self.actions, name='q'))
-        width = self.rep_params['hidden']
         self.q = builder.addHead(
-            lambda: MultiLayerHead(width=width, actions=self.actions, name='q')
+            lambda: MultiLayerHead(actions=self.actions, name='q')
         )
 
     # internal compiled version of the value function
