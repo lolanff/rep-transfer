@@ -20,6 +20,13 @@
 - Use Goal location A
 - Set a long training period: 100,000 steps
 - Save checkpoints
+### Observations:
+- Both agents learned. The best-alpha agent learned faster.
+- The kernels in the first convolutional layer (which has three input channels) appear to have some structures (i.e. not completely random): straight lines, corners, isolated dots, etc.
+- The kernels in both alpha-cases look similar, but the best-alpha-case shows higher contrast.
+- The fact that the kernels are similar at different learning rates suggests that both agents ended up near the same minimum of the loss function.
+
+To do: check out the feature maps of Map A.
 
 
 
