@@ -39,12 +39,12 @@ def test_MazeNetReLU():
     assert q.shape == (1, 4)
 
 
-def MazeNetFTA():
+def test_MazeNetFTA():
     builder = NetworkBuilder(
         input_shape=(15, 15, 3),
         params={
             "eta": 0.2,
-            "hidden": 64,
+            "hidden": 32,
             "type": "MazeNetFTA",
         },
         seed=0,

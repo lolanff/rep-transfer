@@ -7,6 +7,7 @@ import jax.numpy as jnp
 import haiku as hk
 
 import utils.hk as hku
+from utils.functions import fta
 
 ModuleBuilder = Callable[[], Callable[[jax.Array | np.ndarray], jax.Array]]
 
@@ -134,6 +135,22 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
                 hk.Flatten(name='flatten'),
                 hk.Linear(hidden, w_init=w_init, name='linear'),
                 jax.nn.relu,
+                hk.Flatten(name='phi'),
+            ]
+
+        elif name == 'MazeNetFTA':
+            # https://github.com/pytorch/pytorch/blob/9bc9d4cdb4355a385a7d7959f07d04d1648d6904/torch/nn/modules/conv.py#L178
+            w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
+            b_conv_1_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
+            w_init = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
+            layers = [
+                hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv'),
+                jax.nn.relu,
+                hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv_1'),
+                jax.nn.relu,
+                hk.Flatten(name='flatten'),
+                hk.Linear(hidden, name='linear'),  # What's a suitable weight/bias initializer for FTA?
+                lambda x: fta(x, eta=params['eta'], tiles=20, lower_bound=-2, upper_bound=2),
                 hk.Flatten(name='phi'),
             ]
 

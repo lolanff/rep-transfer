@@ -27,8 +27,17 @@
 - The fact that the kernels are similar at different learning rates suggests that both agents ended up near the same minimum of the loss function. This makes sense because both agents start at the same initial position in the loss function landscape, and their learning rates are similar.
 - For alpha=0.0001, the feature maps are not instructive visually. 
 - For alpha=0.0003, it can be seen that the feature maps highlight the approximate location of the agent. 
+TO DO: Compute feature metrics
 ### Conclusions & Outlooks: 
 - Agents with similar learning rates, if both successfully trained, learned similar feature representations.
 - It appears that the feature maps serve to locate the agent. It makes sense. Since the walls and the goal never move, the important feature is the agent's location. As long as the agent knows where it is, it can decide an optimal action. 
-- Why then does the feature representation only transfer well to similar tasks? The feature representation must have encoded some other, map-specific information, e.g. "the bottom right region is good!". So the further the new goal is from goal A, the less generalizable the feature reps are.
+- Why then does the feature representation only transfer well to similar tasks (in the ReLU case, according to Han et al.)? One possible reason is that the feature representation may have encoded some other, map-specific information, e.g. "the bottom right region is good!". So the further the new goal is from goal A, the less generalizable the feature reps are.
 - I am looking forward to see the feature maps in the fta case.
+
+## Experiment E0, Phase P2
+### Objectives: 
+- Train an agent with FTA activation
+- Analyze its RepNet (kernels, feature maps, assessment metrics for the linear layer)
+### Methods: 
+- Sweep the training of the DQN-FTA agent over hyperparameter alpha. Save all checkpoints
+- Select the best DQN-FTA agent and analyze its RepNet
