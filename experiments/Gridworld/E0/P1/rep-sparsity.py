@@ -21,7 +21,7 @@ COLORS = ['r','y','g','b','m']
 
 #---- Input Params ----#
 alpha = 0.0001
-IDX = np.arange(1,10,2)
+IDX = np.arange(1, 10, 2)
 #----------------------#
 
 def main(): 
