@@ -27,19 +27,26 @@
 - The fact that the kernels are similar at different learning rates suggests that both agents ended up near the same minimum of the loss function. This makes sense because both agents start at the same initial position in the loss function landscape, and their learning rates are similar.
 - For alpha=0.0001 (best), the feature maps are not instructive visually. 
 - For alpha=0.0003 (second best), it can be seen that the feature maps highlight the approximate location of the agent. 
-- *Rep Sparsity* The second-best-alpha agents generally have sparser feature representation in the linear layer. Surprise!
 ### Conclusions & Outlooks: 
 - Agents with similar learning rates, if both successfully trained, learned similar feature representations.
 - It appears that the feature maps serve to locate the agent. It makes sense. Since the walls and the goal never move, the important feature is the agent's location. As long as the agent knows where it is, it can decide an optimal action. 
-- Why then does the feature representation only transfer well to similar tasks (in the ReLU case, according to Han et al.)? One possible reason is that the feature representation may have encoded some other, map-specific information, e.g. "the bottom right region is good!". So the further the new goal is from goal A, the less generalizable the feature reps are.
-- I am looking forward to see the feature maps in the fta case.
-- Hyperparameter sweeping optimizes for faster learning, but not necessarily for better feature representation!
+- Why then does the feature representation only transfer well to similar tasks (in the ReLU case, according to Han et al)? One possible reason is that the feature representation may have encoded some other, map-specific information, e.g. "the bottom right region is good!". So the further the new goal is from goal A, the less generalizable the feature reps are.
+- I am looking forward to see the feature maps in the FTA case.
 
 ## Experiment E0, Phase P2
 ### Objectives: 
-- Train an agent with FTA activation
-- Analyze its RepNet (kernels, feature maps, assessment metrics for the linear layer)
+- Familiarize with the quality metrics for the representation in the linear layer.
 ### Methods: 
-- Sweep the training of the DQN-FTA agent over hyperparameter alpha. Save all checkpoints.
-- Fix eta = 0.2
-- Select the best DQN-FTA agent and analyze its RepNet
+- Define the quality metrics (sparsity, etc) in the plotting scripts directly or in utils/functions.py
+- Use the feature nets trained in Phase P1, compute the quality metrics of individual state-features.
+- Visualize the metrics by histograms (rather than averaging to a number)
+### Observations: 
+##### Sparsity
+- On average, the second-best-alpha agents have sparser feature representation.
+- This agrees with the prior observation of the greater sparsity in the feature maps of second-best-alpha agent.
+##### Orthogonality
+- None of the best-alpha agent's features are close to being orthogonal with each other! Whereas the second-best-alpha agent has quite many orthogonal feature pairs.
+- Agents with alpha=0.0003 and seed=0,2 have pretty orthogonal and sparse features.
+### Conclusions & Outlooks: 
+- Hyperparameter sweeping optimizes for faster learning, but not necessarily for better feature representation!
+
