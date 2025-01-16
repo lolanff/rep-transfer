@@ -43,3 +43,8 @@ def fta(x: ArrayLike, eta: float = 2, tiles: int = 20, lower_bound: float = -20,
 @jax.jit
 def fuzzy_indicator_function(x: ArrayLike, eta: float):
     return jnp.greater(eta, x).astype(x.dtype) * x + jnp.greater(x, eta).astype(x.dtype)
+
+def compute_feature_sparsity(features: jax.Array, threshold: float = 1e-10) -> float:
+    total_elements = features.size
+    zero_elements = jnp.count_nonzero(jnp.abs(features) < threshold).item()
+    return zero_elements / total_elements

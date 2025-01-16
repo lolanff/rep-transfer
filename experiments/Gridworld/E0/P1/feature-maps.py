@@ -85,7 +85,7 @@ def visualize_feature_maps(feature_maps, layer_idx):
             ax.set_yticks([]) 
         else:
             ax.axis("off")
-    fig.colorbar(im, orientation='horizontal')
+    fig.colorbar(im, orientation='horizontal') 
     plt.tight_layout()
     save(save_path=f'{path}/plots', plot_name=f'{idx}/{agent_coord[0]}-{agent_coord[1]}_conv{layer_idx}')
     plt.clf()
