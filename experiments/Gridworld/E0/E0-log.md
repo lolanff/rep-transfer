@@ -47,6 +47,11 @@
 ##### Orthogonality
 - None of the best-alpha agent's features are close to being orthogonal with each other! Whereas the second-best-alpha agent has quite many orthogonal feature pairs.
 - Agents with alpha=0.0003 and seed=0,2 have pretty orthogonal and sparse features.
+##### Dynamics Awareness
+- There are 246 out of 1044 transitions in which the agent walks into a wall and remains in the same state. I think we should exclude these transitions.
+- I also assumed that the random state should be different from the current state.
+- Dynamics awareness are consistently greater in the alpha=0.0003 agents.
+- The agent with alpha=0.0003 and seed=0 has distinct states with the same features (as evidenced by "mean=inf" in the plots). I think these are the trivial features indicated in the orthogonality plot.
 ### Conclusions & Outlooks: 
 - Hyperparameter sweeping optimizes for faster learning, but not necessarily for better feature representation!
 

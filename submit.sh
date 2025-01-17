@@ -5,9 +5,9 @@
 #SBATCH --account=def-whitem
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=anffany@ualberta.ca
-#SBATCH --job-name=E0-P2
-#SBATCH --output=E0-P2.out
+#SBATCH --job-name=E1-P0
+#SBATCH --output=E1-P0.out
 
 module load apptainer
-apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./scripts/E0-P2.sh
+apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./scripts/E1-P0.sh
 
