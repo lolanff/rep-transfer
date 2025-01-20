@@ -1,4 +1,5 @@
-##  Experiment E0, Phase P0
+#  Experiment E0 -- Playing around
+##  Phase P0
 ### Objectives: 
 - Familiarize with visualizing different learning curves. 
 - Determine if agents with suboptimal learning rate (alpha) can still learn.
@@ -12,7 +13,7 @@
 - No, agents with second best alpha don't seem to solve their tasks after 30,000 steps.
 - Can they learn given more steps? Will their feature representation be worse or just as good?
 
-## Experiment E0, Phase P1
+## Phase P1
 ### Objectives: 
 - Compare NN representations of successful DQN-ReLU agents trained at different learning rates
 ### Methods: 
@@ -33,7 +34,7 @@
 - Why then does the feature representation only transfer well to similar tasks (in the ReLU case, according to Han et al)? One possible reason is that the feature representation may have encoded some other, map-specific information, e.g. "the bottom right region is good!". So the further the new goal is from goal A, the less generalizable the feature reps are.
 - I am looking forward to see the feature maps in the FTA case.
 
-## Experiment E0, Phase P2
+## Phase P2
 ### Objectives: 
 - Familiarize with the quality metrics for the representation in the linear layer.
 ### Methods: 
@@ -52,6 +53,12 @@
 - I also assumed that the random state should be different from the current state.
 - Dynamics awareness are consistently greater in the alpha=0.0003 agents.
 - The agent with alpha=0.0003 and seed=0 has distinct states with the same features (as evidenced by "mean=inf" in the plots). I think these are the trivial features indicated in the orthogonality plot.
+##### Complexity Reduction and Diversity
+- These two quantities are essentially the same. One difference is that Diversity normalizes distances by the max distance, while Complexity reduction, somewhat arbitrarily, normalizes by  the largest Lipschitz ratio across all representations, in order to keep Complexity Reduction greater than 0. The second difference is that Diversity manually truncates any Lipschitz ratios greater than 1.
+- I think that these two quantitites can merge into one: (1 - mean(Dv/Ds)), where Dv and Ds are distances normalized by their respective max distances. As seen in the plots, the distributions of normalized Lipschitz ratios often show characteristic peaks centered around 1. In contrast, un-normalized Lipschitz ratios have peaks at random places. 
+- It makes sense to normalize distances in the representation space when comparing across different representations. The value network can trivially scale up or down the features, so the absolute values of the distances do not matter. 
 ### Conclusions & Outlooks: 
 - Hyperparameter sweeping optimizes for faster learning, but not necessarily for better feature representation!
+- Complexity Reduction and Diversity are very similar in their formulation, which may have led to the similarity of their respective plots in Fig. 5 (of Han et al's paper). I think that they can be merged into one metric. 
+- "Non-interference" must be computed during training, and Adam said it doesn't quite make sense, so it will be ignored for now.
 

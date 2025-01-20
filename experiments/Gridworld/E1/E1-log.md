@@ -1,7 +1,8 @@
-## Experiment E1, Phase P0
+# Experiment E1 -- Reproducing Fig. 3 in Han et al.'s paper
+## Phase P0
 ### Objectives: 
-- Train two DQN agents, with ReLU(L) and FTA activations respectively
-- Analyze their feature nets (conv kernels, conv feature maps, quality metrics for the representation)
+- Implement early stopping
+- Define function for task similarity
+- Reproduce the two "scratch" curves. Ignore "input" and "random"
 ### Methods: 
-- Sweep over hyperparameter alpha. Save all checkpoints.
-- For DQN-FTA, fix hidden = 32 and eta = 0.2. For DQN-ReLU(L), fix hidden = 640.
+- TBC
