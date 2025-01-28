@@ -1,8 +1,7 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=16
-#SBATCH --time=01-23:59
+#SBATCH --time=0-23:59
 #SBATCH --mem=8G
-#SBATCH --account=def-whitem
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=xinze5@ualberta.ca
 #SBATCH --job-name=A1-P0-DQN
