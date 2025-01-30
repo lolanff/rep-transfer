@@ -150,7 +150,7 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
                 jax.nn.relu,
                 hk.Flatten(name='flatten'),
                 hk.Linear(hidden, name='linear'),  # What's a suitable weight/bias initializer for FTA?
-                lambda x: fta(x, eta=params['eta'], tiles=20, lower_bound=-2, upper_bound=2),
+                lambda x: fta(x, eta=params['eta'], tiles=20, lower_bound=-10*params['eta'], upper_bound=10*params['eta']),
                 hk.Flatten(name='phi'),
             ]
 

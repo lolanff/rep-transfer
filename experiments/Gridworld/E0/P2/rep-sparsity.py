@@ -26,7 +26,7 @@ IDX = np.arange(1, 10, 2)
 
 def main(): 
     # Load state samples from saved transition data
-    state_sample = np.load("results/Gridworld/transition-data/distance_current_states.npy")
+    state_sample = np.load("analysis/Gridworld/data/transition_current_states.npy")
 
     # Load experiment params
     exp = ExperimentModel.load(f'{path}/{agent_label}.json')

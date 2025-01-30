@@ -3,6 +3,8 @@ import sys
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append("../../")
 import matplotlib.pyplot as plt
+import json
+import os
 
 import numpy as np
 
@@ -12,23 +14,17 @@ from environments.Gridworld import GridHardXY, GridHardRGB, GridTwoRoomRGB, Grid
 class GridHardXYGoal(GridHardXY):
     def __init__(self, goal_id, seed=np.random.randint(int(1e5))):
         super().__init__(seed)
-        self.goals = {'A': [9, 9], 
-                      'B': [0, 0], 
-                      'C': [0, 14], 
-                      'D': [14, 0], 
-                      'E': [14, 14], 
-                      'F': [7, 7]}
+        data_path = os.path.dirname(os.path.abspath(__file__)) + "/env_data/sim2coord.json"
+        with open(data_path, 'r') as f:
+            self.goals = json.load(f)
         self.goal_x, self.goal_y = self.goals[goal_id]
 
 class GridHardRGBGoal(GridHardRGB):
     def __init__(self, goal_id, seed=np.random.randint(int(1e5))):
         super().__init__(seed)
-        self.goals = {'A': [9, 9], 
-                      'B': [0, 0], 
-                      'C': [0, 14], 
-                      'D': [14, 0], 
-                      'E': [14, 14], 
-                      'F': [7, 7]}
+        data_path = os.path.dirname(os.path.abspath(__file__)) + "/env_data/sim2coord.json"
+        with open(data_path, 'r') as f:
+            self.goals = json.load(f)
         self.goal_x, self.goal_y = self.goals[goal_id]
 
 class GridHardRGBGoalAll(GridHardRGB):

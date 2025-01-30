@@ -27,8 +27,8 @@ def main():
     start = time.time()
 
     # Load state samples from saved transition data
-    current_states = np.load("results/Gridworld/transition-data/distance_current_states.npy")
-    next_states = np.load("results/Gridworld/transition-data/distance_next_states.npy")
+    current_states = np.load("analysis/Gridworld/data/transition_current_states.npy")
+    next_states = np.load("analysis/Gridworld/data/transition_next_states.npy")
 
     # Create a random state samples by permutation
     np.random.seed(0)

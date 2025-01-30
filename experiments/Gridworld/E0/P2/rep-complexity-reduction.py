@@ -26,7 +26,7 @@ def main():
     start = time.time()
 
     # Load state samples and remove duplicates
-    state_sample = np.load("results/Gridworld/transition-data/distance_current_states.npy")
+    state_sample = np.load("analysis/Gridworld/data/transition_current_states.npy")
     unique_flat_samples = np.unique(state_sample.reshape(1044, -1), axis=0)
     state_sample = unique_flat_samples.reshape(-1, 15, 15, 3)
 

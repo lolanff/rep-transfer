@@ -69,10 +69,6 @@ for idx in indices:
             'return': Identity(),
             'episode': Identity(),
             'steps': Identity(),
-            'delta': Pipe(
-                MovingAverage(0.99),
-                Subsample(100),
-            ),
         },
         # by default, ignore keys that are not explicitly listed above
         default=Ignore(),
@@ -140,4 +136,7 @@ for idx in indices:
     # -- Saving --
     # ------------
     saveCollector(exp, collector, base=args.save_path)
-    chk.save()
+    if problem.exp_params.get("save", {}): 
+        chk.save()
+    else: 
+        chk.delete()

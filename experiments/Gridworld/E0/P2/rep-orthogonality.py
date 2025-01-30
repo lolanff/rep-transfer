@@ -26,7 +26,7 @@ def main():
     start = time.time()
 
     # Load state samples from saved transition data
-    state_sample = np.load("results/Gridworld/transition-data/distance_current_states.npy")
+    state_sample = np.load("analysis/Gridworld/data/transition_current_states.npy")
 
     # Load experiment params
     exp = ExperimentModel.load(f'experiments/Gridworld/E0/P1/{agent_label}.json')
