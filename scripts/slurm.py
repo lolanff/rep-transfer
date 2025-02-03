@@ -88,7 +88,7 @@ for path in missing:
         sub = dataclasses.replace(slurm, cores=cores)
 
         # build the executable string
-        runner = f'apptainer exec -C -B .:{os.environ["HOME"]} -W $SLURM_TMPDIR pyproject.sif python {cmdline.entry} -e {path} --save_path {cmdline.results} -i '
+        runner = f'apptainer exec -C -B .:$HOME -W $SLURM_TMPDIR pyproject.sif python {cmdline.entry} -e {path} --save_path {cmdline.results} -i '
 
         # generate the gnu-parallel command for dispatching to many CPUs across server nodes
         parallel = Slurm.buildParallel(runner, l, sub)
