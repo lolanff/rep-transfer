@@ -3,6 +3,7 @@
     "problem": "Gridworld",
     "total_steps": 300000,
     "episode_cutoff": 100,
+    "early_saving": 100,
     "metaParameters": {
         "experiment": {
             "load": false,

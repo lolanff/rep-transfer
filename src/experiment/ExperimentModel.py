@@ -10,6 +10,7 @@ class ExperimentModel(ExperimentDescription):
 
         self.episode_cutoff = d.get('episode_cutoff', -1)
         self.total_steps = d.get('total_steps')
+        self.early_saving = d.get('early_saving', -1)
 
 def load(path=None):
     path = path if path is not None else sys.argv[1]

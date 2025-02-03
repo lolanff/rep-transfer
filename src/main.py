@@ -103,6 +103,9 @@ for idx in indices:
     # if we haven't started yet, then make the first interaction
     if glue.total_steps == 0:
         glue.start()
+        
+    # Number of consecutive completion of experiments
+    consecutive_completion_counter = 0
 
     for step in range(glue.total_steps, exp.total_steps):
         collector.next_frame()
@@ -128,6 +131,14 @@ for idx in indices:
             episode = chk['episode']
             logger.debug(f'{episode} {step} {glue.total_reward} {avg_time:.4}ms {int(fps)}')
 
+            # stop the experiment if condition met
+            if not (exp.episode_cutoff > -1 and glue.num_steps >= exp.episode_cutoff):
+                consecutive_completion_counter += 1
+                if exp.early_saving > -1 and consecutive_completion_counter >= exp.early_saving:
+                    break
+            else:
+                consecutive_completion_counter = 0
+                
             glue.start()
 
     collector.reset()
