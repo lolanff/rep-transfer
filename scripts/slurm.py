@@ -71,10 +71,7 @@ missing = gather_missing_indices(cmdline.e, cmdline.runs, loader=Experiment.load
 memory = Slurm.memory_in_mb(slurm.mem_per_core)
 compute_cost = partial(approximate_cost, cores_per_job=slurm.cores, mem_per_core=memory, hours=total_hours)
 cost = sum(compute_cost(math.ceil(len(job_list) / groupSize)) for job_list in missing.values())
-
-print(f"Expected to use {cost:.2f} core years.")
-if not cmdline.debug:
-    input("Press Enter to confirm or ctrl+c to exit")
+print(f"Expected to use {cost*365.25:.2f} core days.")
 
 # start scheduling
 for path in missing:
@@ -88,7 +85,7 @@ for path in missing:
         sub = dataclasses.replace(slurm, cores=cores)
 
         # build the executable string
-        runner = f'apptainer exec -C -B .:$HOME -W $SLURM_TMPDIR pyproject.sif python {cmdline.entry} -e {path} --save_path {cmdline.results} -i '
+        runner = f'apptainer exec -C -B .:${{HOME}} -W ${{SLURM_TMPDIR}} pyproject.sif python {cmdline.entry} -e {path} --save_path {cmdline.results} -i '
 
         # generate the gnu-parallel command for dispatching to many CPUs across server nodes
         parallel = Slurm.buildParallel(runner, l, sub)

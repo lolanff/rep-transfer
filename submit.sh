@@ -1,13 +1,10 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=4
-#SBATCH --time=00-23:59
-#SBATCH --mem=8G
+#SBATCH --time=00-02:59
+#SBATCH --mem-per-cpu=4G
+#SBATCH --ntasks=1
 #SBATCH --account=def-whitem
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=anffany@ualberta.ca
-#SBATCH --job-name=E1-P0
-#SBATCH --output=E1-P0.out
+#SBATCH --job-name=scheduler
+#SBATCH --output=scheduler.out
 
 module load apptainer
-apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif ./scripts/E1-P0.sh
-
+apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif python scripts/slurm.py --cluster clusters/cedar.json --runs 5 -e experiments/Gridworld/E1/P0/DQN-Relu.json 
