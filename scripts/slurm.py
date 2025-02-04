@@ -3,7 +3,10 @@ import os
 sys.path.append(os.getcwd() + '/src')
 
 import math
+import time
 import argparse
+import dataclasses
+import PyExpUtils.runner.Slurm as Slurm
 import experiment.ExperimentModel as Experiment
 
 from functools import partial
@@ -23,30 +26,47 @@ cmdline = parser.parse_args()
 ANNUAL_ALLOCATION = 724
 
 # -------------------------------
-# Load cluster configuration
+# Generate scheduling bash script
 # -------------------------------
-with open(cmdline.cluster, 'r') as f:
-    import json
-    slurm_config = json.load(f)
+cwd = os.getcwd()
+project_name = os.path.basename(cwd)
+print(f'cwd={cwd}')
+print(f'project_name={project_name}')
+
+# the contents of the string below will be the bash script that is scheduled on compute canada
+# change the script accordingly (e.g. add the necessary `module load X` commands)
+def getJobScript(parallel):
+    return f"""#!/bin/bash
+
+#SBATCH --signal=B:SIGTERM@180
+
+module load apptainer
+
+export MPLBACKEND=TKAgg
+export OMP_NUM_THREADS=1
+{parallel}
+    """
 
 # ----------------
 # Scheduling logic
 # ----------------
-threads = slurm_config.get('threads_per_task', 1)
+slurm = Slurm.fromFile(cmdline.cluster)
+
+threads = slurm.threads_per_task if isinstance(slurm, Slurm.SingleNodeOptions) else 1
 
 # compute how many "tasks" to clump into each job
-groupSize = int(slurm_config['cores'] / threads) * slurm_config['sequential']
+groupSize = int(slurm.cores / threads) * slurm.sequential
 
 # compute how much time the jobs are going to take
-hours, minutes, seconds = slurm_config['time'].split(':')
+hours, minutes, seconds = slurm.time.split(':')
 total_hours = int(hours) + (int(minutes) / 60) + (int(seconds) / 3600)
 
 # gather missing
 missing = gather_missing_indices(cmdline.e, cmdline.runs, loader=Experiment.load)
 
 # compute cost
-memory = int(slurm_config['mem_per_core'].replace('G', '')) * 1024
-compute_cost = partial(approximate_cost, cores_per_job=slurm_config['cores'], mem_per_core=memory, hours=total_hours)
+memory = Slurm.memory_in_mb(slurm.mem_per_core)
+compute_cost = partial(approximate_cost, cores_per_job=slurm.cores, mem_per_core=memory, hours=total_hours)
 cost = sum(compute_cost(math.ceil(len(job_list) / groupSize)) for job_list in missing.values())
 perc = (cost / ANNUAL_ALLOCATION) * 100
 
@@ -54,55 +74,38 @@ print(f"Expected to use {cost:.2f} core years, which is {perc:.4f}% of our annua
 if not cmdline.debug:
     input("Press Enter to confirm or ctrl+c to exit")
 
-# Generate job scripts
+# start scheduling
+for path in missing:
+    for g in group(missing[path], groupSize):
+        l = list(g)
+        print("scheduling:", path, l)
+        # make sure to only request the number of CPU cores necessary
+        tasks = min([groupSize, len(l)])
+        par_tasks = max(int(tasks // slurm.sequential), 1)
+        cores = par_tasks * threads
+        sub = dataclasses.replace(slurm, cores=cores)
 
-def generate_job_script(exp_path, task_indices):
-    """Generate a SLURM job script for a group of tasks"""
-    return f"""#!/bin/bash
-#SBATCH --account={slurm_config['account']}
-#SBATCH --time={slurm_config['time']}
-#SBATCH --cpus-per-task={slurm_config['threads_per_task']}
-#SBATCH --mem-per-cpu={slurm_config['mem_per_core']}
-#SBATCH --output=slurm_scripts/job_%A_%a.out
-#SBATCH --signal=B:SIGTERM@180
+        # build the executable string
+        # instead of activating the venv every time, just use its python directly
+        runner = f'apptainer exec -C -B .:${{HOME}} -W ${{SLURM_TMPDIR}} pyproject.sif python {cmdline.entry} -e {path} --save_path {cmdline.results} -i '
 
-module load apptainer
+        # generate the gnu-parallel command for dispatching to many CPUs across server nodes
+        parallel = Slurm.buildParallel(runner, l, sub)
 
-# Map SLURM_ARRAY_TASK_ID to actual task index
-declare -a task_indices=({' '.join(str(i) for i in task_indices)})
-task_idx=${{task_indices[$SLURM_ARRAY_TASK_ID]}}
+        # generate the bash script which will be scheduled
+        script = getJobScript(parallel)
 
-apptainer exec -C -B .:${{HOME}} -W ${{SLURM_TMPDIR}} pyproject.sif python {cmdline.entry} -e {exp_path} --save_path {cmdline.results} -i $task_idx
-"""
+        if cmdline.debug:
+            print(Slurm.to_cmdline_flags(sub))
+            print(script)
+            exit()
 
-# Create scripts directory if it doesn't exist
-os.makedirs('slurm_scripts', exist_ok=True)
-
-# Generate submission script
-submit_all = """#!/bin/bash
-"""
-
-# Generate scripts for each experiment
-for i, (exp_path, indices) in enumerate(missing.items()):
-    # Split indices into groups
-    for j, group_indices in enumerate(group(indices, groupSize)):
-        task_list = list(group_indices)
-        script = generate_job_script(exp_path, task_list)
-        
-        filename = f"slurm_scripts/job_{i}_{j}.sh"
-        with open(filename, 'w') as f:
+        # Save script with unique name based on path and task indices
+        script_name = f'slurm_{os.path.basename(path)}_{min(l)}-{max(l)}.sh'
+        with open(script_name, 'w') as f:
             f.write(script)
-        os.chmod(filename, 0o755) 
-        
-        # Add submission command to submit_all script
-        submit_all += f"sbatch --array=0-{len(task_list)-1} {filename}\n"
-        submit_all += "sleep 2\n"  # Add 2-second delay after each submission
-        print(f"Generated {filename} for experiment {exp_path}")
 
-# Write the submit_all script
-with open('slurm_scripts/submit_all.sh', 'w') as f:
-    f.write(submit_all)
-os.chmod('slurm_scripts/submit_all.sh', 0o755)  # Make executable
+        #Slurm.schedule(script, sub)
 
-print("\nTo submit all jobs at once, run:")
-print("./slurm_scripts/submit_all.sh")
+        # DO NOT REMOVE. This will prevent you from overburdening the slurm scheduler. Be a good citizen.
+        #time.sleep(2)

@@ -3,7 +3,7 @@
     "account": "def-whitem",
     "time": "23:59:00", 
     "cores": 4,
-    "mem_per_core": "2G",
-    "sequential": 64,
-    "threads_per_task": 4
+    "mem_per_core": "4096M",
+    "threads_per_task": 1,
+    "sequential": 64
 }
