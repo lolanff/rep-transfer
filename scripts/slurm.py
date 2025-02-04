@@ -28,10 +28,6 @@ ANNUAL_ALLOCATION = 724
 # -------------------------------
 # Generate scheduling bash script
 # -------------------------------
-cwd = os.getcwd()
-project_name = os.path.basename(cwd)
-print(f'cwd={cwd}')
-print(f'project_name={project_name}')
 
 # the contents of the string below will be the bash script that is scheduled on compute canada
 # change the script accordingly (e.g. add the necessary `module load X` commands)
@@ -44,6 +40,7 @@ module load apptainer
 
 export MPLBACKEND=TKAgg
 export OMP_NUM_THREADS=1
+
 {parallel}
     """
 
@@ -74,11 +71,18 @@ print(f"Expected to use {cost:.2f} core years, which is {perc:.4f}% of our annua
 if not cmdline.debug:
     input("Press Enter to confirm or ctrl+c to exit")
 
+# create directory to save all the scripts, if it doesn't exist
+os.makedirs('slurm_scripts', exist_ok=True)
+
+# generate submission script
+submit_all = """#!/bin/bash
+"""
+
 # start scheduling
 for path in missing:
     for g in group(missing[path], groupSize):
         l = list(g)
-        print("scheduling:", path, l)
+        print("scheduling:", path, f"{min(l)}-{max(l)}")
         # make sure to only request the number of CPU cores necessary
         tasks = min([groupSize, len(l)])
         par_tasks = max(int(tasks // slurm.sequential), 1)
@@ -92,20 +96,25 @@ for path in missing:
         # generate the gnu-parallel command for dispatching to many CPUs across server nodes
         parallel = Slurm.buildParallel(runner, l, sub)
 
-        # generate the bash script which will be scheduled
+        # generate the bash script 
         script = getJobScript(parallel)
 
         if cmdline.debug:
-            print(Slurm.to_cmdline_flags(sub))
-            print(script)
+            print(f'sub={Slurm.to_cmdline_flags(sub)}')
+            print(f'script={script}')
             exit()
 
-        # Save script with unique name based on path and task indices
-        script_name = f'slurm_{os.path.basename(path)}_{min(l)}-{max(l)}.sh'
+        script_name = f'slurm_scripts/job_{min(l)}-{max(l)}.sh'
         with open(script_name, 'w') as f:
             f.write(script)
+        os.chmod(script_name, 0o755) 
 
-        #Slurm.schedule(script, sub)
+        submit_all += f"sbatch {Slurm.to_cmdline_flags(sub)} {script_name}\n"
+        submit_all += "sleep 2\n" 
 
-        # DO NOT REMOVE. This will prevent you from overburdening the slurm scheduler. Be a good citizen.
-        #time.sleep(2)
+with open('slurm_scripts/submit_all.sh', 'w') as f:
+    f.write(submit_all)
+os.chmod('slurm_scripts/submit_all.sh', 0o755)  
+
+print("\nTo submit all jobs, run:")
+print("./slurm_scripts/submit_all.sh")

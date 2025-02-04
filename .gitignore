@@ -33,3 +33,6 @@ build/
 
 # ignore bash history
 .bash_history
+
+# ignore slurm scripts
+slurm_scripts/
