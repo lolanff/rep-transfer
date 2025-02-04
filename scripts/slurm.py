@@ -96,7 +96,8 @@ for i, (exp_path, indices) in enumerate(missing.items()):
         
         # Add submission command to submit_all script
         submit_all += f"sbatch --array=0-{len(task_list)-1} {filename}\n"
-        print(f"\nGenerated {filename} for experiment {exp_path}")
+        submit_all += "sleep 2\n"  # Add 2-second delay after each submission
+        print(f"Generated {filename} for experiment {exp_path}")
 
 # Write the submit_all script
 with open('slurm_scripts/submit_all.sh', 'w') as f:
