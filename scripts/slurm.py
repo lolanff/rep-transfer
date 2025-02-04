@@ -3,10 +3,7 @@ import os
 sys.path.append(os.getcwd() + '/src')
 
 import math
-import time
 import argparse
-import dataclasses
-import PyExpUtils.runner.Slurm as Slurm
 import experiment.ExperimentModel as Experiment
 
 from functools import partial
@@ -22,6 +19,8 @@ parser.add_argument('--results', type=str, default='./')
 parser.add_argument('--debug', action='store_true', default=False)
 
 cmdline = parser.parse_args()
+
+ANNUAL_ALLOCATION = 724
 
 # -------------------------------
 # Load cluster configuration
@@ -49,11 +48,13 @@ missing = gather_missing_indices(cmdline.e, cmdline.runs, loader=Experiment.load
 memory = int(slurm_config['mem_per_core'].replace('G', '')) * 1024
 compute_cost = partial(approximate_cost, cores_per_job=slurm_config['cores'], mem_per_core=memory, hours=total_hours)
 cost = sum(compute_cost(math.ceil(len(job_list) / groupSize)) for job_list in missing.values())
-print(f"Expected to use {cost*365.25:.2f} core days.")
+perc = (cost / ANNUAL_ALLOCATION) * 100
+
+print(f"Expected to use {cost:.2f} core years, which is {perc:.4f}% of our annual allocation")
+if not cmdline.debug:
+    input("Press Enter to confirm or ctrl+c to exit")
 
 # Generate job scripts
-cwd = os.getcwd()
-project_name = os.path.basename(cwd)
 
 def generate_job_script(exp_path, task_indices):
     """Generate a SLURM job script for a group of tasks"""
@@ -62,15 +63,13 @@ def generate_job_script(exp_path, task_indices):
 #SBATCH --time={slurm_config['time']}
 #SBATCH --cpus-per-task={slurm_config['threads_per_task']}
 #SBATCH --mem-per-cpu={slurm_config['mem_per_core']}
-#SBATCH --output=job_%A_%a.out
+#SBATCH --output=slurm_scripts/job_%A_%a.out
 #SBATCH --signal=B:SIGTERM@180
 
 module load apptainer
 
-cd {cwd}
-
 # Map SLURM_ARRAY_TASK_ID to actual task index
-declare -a task_indices=(${' '.join(map(str, task_indices))})
+declare -a task_indices=({' '.join(str(i) for i in task_indices)})
 task_idx=${{task_indices[$SLURM_ARRAY_TASK_ID]}}
 
 apptainer exec -C -B .:${{HOME}} -W ${{SLURM_TMPDIR}} pyproject.sif python {cmdline.entry} -e {exp_path} --save_path {cmdline.results} -i $task_idx
@@ -78,6 +77,10 @@ apptainer exec -C -B .:${{HOME}} -W ${{SLURM_TMPDIR}} pyproject.sif python {cmdl
 
 # Create scripts directory if it doesn't exist
 os.makedirs('slurm_scripts', exist_ok=True)
+
+# Generate submission script
+submit_all = """#!/bin/bash
+"""
 
 # Generate scripts for each experiment
 for i, (exp_path, indices) in enumerate(missing.items()):
@@ -90,6 +93,16 @@ for i, (exp_path, indices) in enumerate(missing.items()):
         with open(filename, 'w') as f:
             f.write(script)
         
+        # Add submission command to submit_all script
+        submit_all += f"sbatch --array=0-{len(task_list)-1} {filename}\n"
         print(f"\nGenerated {filename} for experiment {exp_path}")
-        print(f"To submit this job, run:")
+        print(f"To submit this job individually, run:")
         print(f"sbatch --array=0-{len(task_list)-1} {filename}")
+
+# Write the submit_all script
+with open('slurm_scripts/submit_all.sh', 'w') as f:
+    f.write(submit_all)
+os.chmod('slurm_scripts/submit_all.sh', 0o755)  # Make executable
+
+print("\nTo submit all jobs at once, run:")
+print("./slurm_scripts/submit_all.sh")
