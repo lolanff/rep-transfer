@@ -1,9 +1,9 @@
 {
     "type": "single_node",
-
     "account": "def-whitem",
-    "time": "2:59:00",
-    "cores": 4,
+    "time": "23:59:00",
+    "cores": 16,
     "mem_per_core": "2G",
-    "sequential": 64
+    "sequential": 256,
+    "threads_per_task": 16
 }
