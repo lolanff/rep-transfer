@@ -92,12 +92,11 @@ for i, (exp_path, indices) in enumerate(missing.items()):
         filename = f"slurm_scripts/job_{i}_{j}.sh"
         with open(filename, 'w') as f:
             f.write(script)
+        os.chmod(filename, 0o755) 
         
         # Add submission command to submit_all script
         submit_all += f"sbatch --array=0-{len(task_list)-1} {filename}\n"
         print(f"\nGenerated {filename} for experiment {exp_path}")
-        print(f"To submit this job individually, run:")
-        print(f"sbatch --array=0-{len(task_list)-1} {filename}")
 
 # Write the submit_all script
 with open('slurm_scripts/submit_all.sh', 'w') as f:

@@ -8,3 +8,5 @@
 
 module load apptainer
 apptainer exec -C -B .:${HOME} -W ${SLURM_TMPDIR} pyproject.sif python scripts/slurm.py --cluster clusters/cedar.json --runs 5 -e experiments/Gridworld/E1/P0/DQN-Relu.json 
+
+#  apptainer exec -C -B .:$HOME pyproject.sif python scripts/slurm.py --cluster clusters/cedar.json --runs 5 -e experiments/Gridworld/E1/P0/DQN-Relu.json                    
