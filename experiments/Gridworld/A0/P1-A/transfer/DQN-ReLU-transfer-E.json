@@ -6,7 +6,7 @@
     "metaParameters": {
         "experiment": {
             "load": {
-                "path": "results/Gridworld/A0/P1/pretrain/DQN-ReLU-A",
+                "path": "results/Gridworld/A0/P1-A/pretrain/DQN-ReLU-A",
                 "config": {
                     "a": {
                         "buffer": false,

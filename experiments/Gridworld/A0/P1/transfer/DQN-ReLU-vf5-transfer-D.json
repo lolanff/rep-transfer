@@ -1,5 +1,5 @@
 {
-    "agent": "DQNAux-ReLU-transfer-A",
+    "agent": "DQN-ReLU-vf5-transfer-D",
     "problem": "Gridworld",
     "total_steps": 100000,
     "episode_cutoff": 100,
@@ -49,7 +49,7 @@
             "frozen": true
         },
         "environment": {
-            "goal_id": "A"
+            "goal_id": "119"
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-    "agent": "DQNAux-ReLU-scratch-C",
+    "agent": "DQNAux-ReLU-vf5-scratch-E",
     "problem": "Gridworld",
     "total_steps": 100000,
     "episode_cutoff": 100,
@@ -31,7 +31,7 @@
             "frozen": false
         },
         "environment": {
-            "goal_id": "C"
+            "goal_id": "27"
         }
     }
 }
