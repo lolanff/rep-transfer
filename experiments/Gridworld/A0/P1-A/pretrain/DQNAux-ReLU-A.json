@@ -6,6 +6,7 @@
     "metaParameters": {
         "experiment": {
             "load": false,
+            "save": true,
             "seed_offset": 1000
         },
         "epsilon": 0.1,
