@@ -1,0 +1,55 @@
+{
+    "agent": "DQN-ReLU-transfer-F",
+    "problem": "Gridworld",
+    "total_steps": 100000,
+    "episode_cutoff": 100,
+    "metaParameters": {
+        "experiment": {
+            "load": {
+                "path": "results/Gridworld/A0/P1/pretrain/DQN-ReLU-A",
+                "config": {
+                    "a": {
+                        "buffer": false,
+                        "state": {
+                            "optim": false,
+                            "params": {
+                                "phi": true,
+                                "q": false
+                            },
+                            "target_params": {
+                                "phi": true,
+                                "q": false
+                            }
+                        }
+                    }
+                }
+            },
+            "seed_offset": 11000
+        },
+        "epsilon": 0.1,
+        "target_refresh": 64,
+        "buffer_type": "uniform",
+        "buffer_size": 10000,
+        "batch": 32,
+        "n_step": 1,
+        "normalizer": {
+            "state": {
+                "coeff": 255.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": 0.001,
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeNetReLU",
+            "hidden": 32,
+            "frozen": true
+        },
+        "environment": {
+            "goal_id": "48"
+        }
+    }
+}

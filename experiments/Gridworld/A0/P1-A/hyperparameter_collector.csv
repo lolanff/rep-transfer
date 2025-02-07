@@ -1,0 +1,15 @@
+,Environment,Algorithm,Goal,Hyperparameter,Value,AUC,Return
+0,transfer,DQN-ReLU-transfer-C,170,optimizer.alpha,0.001,7.376,2823.6
+1,transfer,DQN-ReLU-vf5-transfer-D,119,optimizer.alpha,0.0003,9.193999999999999,4164.4
+2,transfer,DQN-ReLU-vf5-transfer-C,170,optimizer.alpha,0.0003,9.436,4151.0
+3,transfer,DQN-ReLU-transfer-A,-1,optimizer.alpha,0.0003,10.0,4315.4
+4,transfer,DQN-ReLU-transfer-B,171,optimizer.alpha,0.001,9.144,3782.0
+5,transfer,DQN-ReLU-vf5-transfer-B,171,optimizer.alpha,0.0003,9.292,4126.2
+6,transfer,DQN-ReLU-vf5-transfer-A,-1,optimizer.alpha,0.001,9.354,3945.2
+7,transfer,DQN-ReLU-vf5-transfer-E,27,optimizer.alpha,0.001,9.576,4551.6
+8,transfer,DQN-ReLU-transfer-D,119,optimizer.alpha,0.001,7.903999999999999,3105.6
+9,transfer,DQN-ReLU-transfer-E,27,optimizer.alpha,0.001,9.544,4538.0
+10,transfer,DQN-ReLU-transfer-F,48,optimizer.alpha,0.001,9.99,9433.2
+11,transfer,DQN-ReLU-vf5-transfer-F,48,optimizer.alpha,0.0001,9.838,9068.6
+12,pretrain,DQN-ReLU-A,-1,optimizer.alpha,0.0001,8.762,12573.2
+13,pretrain,DQNAux-ReLU-A,-1,optimizer.alpha,0.001,8.248000000000001,11881.8
