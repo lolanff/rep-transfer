@@ -48,33 +48,30 @@ if __name__ == "__main__":
     exp = results.get_any_exp()
 
     for env, env_df in split_over_column(df, col='environment'):
-        for alg, alg_df in split_over_column(env_df, col='algorithm'):
-            best_auc = {}
-            best_return = {}
+        for alg, alg_df in split_over_column(env_df, col='algorithm'):            
+            best_alpha = {}
             for goal_id, goal_df in alg_df.groupby('environment.goal_id'):
-                alpha2auc = {}
-                alpha2return = {}
-                for alpha in goal_df['optimizer.alpha'].unique():
-                    xs, ys = extract_learning_curves(goal_df, (alpha,), metric='return', interpolation=None)
-              
-                    # Every N steps we record the average return of the last n episodes
-                    N = 1000
-                    n = 10
-                    auc = []
-                    total_reward = []
-                    for t, r in zip(xs, ys):
-                        ave_r = []
-                        for i in range(int(exp.total_steps/N)):
-                            indices = np.where((N*i < t) & (t <= N*(i+1)))[0]
-                            ave_r.append(np.mean(r[indices[-n:]]))
-                        auc.append(np.sum(ave_r))
-                        total_reward.append(np.sum(r))
-                    alpha2auc[alpha] = np.mean(auc)
-                    alpha2return[alpha] = np.mean(total_reward)
+                if (int(goal_id) + 1) % 5 == 0: 
+                    alpha2auc = {}
+                    for alpha in goal_df['optimizer.alpha'].unique():
+                        xs, ys = extract_learning_curves(goal_df, (alpha,), metric='return', interpolation=None)
                 
-                best_alpha = max(alpha2auc, key=alpha2auc.get)
-                best_auc[goal_id] = alpha2auc[best_alpha]
-                best_return[goal_id] = alpha2return[best_alpha]
-                
-            
-            #save(save_path=f'{path}/plots', plot_name=f'{env}-{alg}')
+                        # Every N steps we record the average return of the last n episodes
+                        N = 10000
+                        n = 100
+                        auc = []
+                        for t, r in zip(xs, ys):
+                            ave_r = []
+                            for i in range(int(exp.total_steps/N)):
+                                indices = np.where((N*i < t) & (t <= N*(i+1)))[0]
+                                ave_r.append(np.mean(r[indices[-n:]]))
+                            auc.append(np.sum(ave_r))
+                        alpha2auc[alpha] = np.mean(auc)
+                    
+                    best_alpha[goal_id] = max(alpha2auc, key=alpha2auc.get)
+                    
+            print(best_alpha)          
+            x = list(map(int, best_alpha.keys()))
+            y = list(best_alpha.values())  
+            plt.plot(x, y, '.')     
+            plt.show()   

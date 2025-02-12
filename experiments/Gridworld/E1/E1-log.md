@@ -9,3 +9,4 @@
 - Assume that eta = 0.2 for Scratch(FTA)
 - Hypersweeps over alpha = [0.001, 0.0003, 0.0001, 0.00003, 0.00001]
 - Hyperparameters are selected by AUC as defined in the paper
+- Two stage approach: after selecting the best alpha for each goal (among the 30 subsamples), generate best configs for re-running at 5 offset random seeds.

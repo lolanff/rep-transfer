@@ -2,7 +2,7 @@
 checkpoints/
 results
 results/
-results.tar
+results.tar*
 .tmp/
 *.out
 
