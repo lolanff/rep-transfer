@@ -82,7 +82,7 @@ gridworld_transfer_json_paths = []
 for agent, goal in product(agents, goals):
     gridworld_transfer = deepcopy(template)
     gridworld_transfer["agent"] = agent[0] + "-" + str(goal)
-    gridworld_transfer["metaParameters"]["environment"]["goal_id"] = goal
+    gridworld_transfer["metaParameters"]["environment"]["goal_id"] = str(goal)
     gridworld_transfer["metaParameters"]["experiment"]["load"]["path"] = agent[1]
     alpha = df[(df["Algorithm"] == agent[0]) & (df["Goal"] == goal)]["Value"].item()
     assert alpha is not None
@@ -103,7 +103,7 @@ for i, gridworld_transfer_json_paths in enumerate(gridworld_transfer_json_paths_
         f.write("#!/bin/bash\n")
         f.write("set -e\n")
         for gridworld_transfer_json_path in gridworld_transfer_json_paths:
-            f.write(f"python scripts/local.py --runs 5 -e experiments/sparse_feature_scratch/{gridworld_transfer_json_path} --cpus 16\n")
+            f.write(f"python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P1/{gridworld_transfer_json_path} --cpus 16\n")
     os.chmod(script_name, 0o755)  
 
 # %%
