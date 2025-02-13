@@ -24,6 +24,8 @@ from experiment.tools import parseCmdLineArgs
 # also sets fonts to be right size when saving
 setDefaultConference('jmlr')
 
+THIS_AGENT = 'DQN-FTA-sweep'
+
 if __name__ == "__main__":
     path, should_save, save_type = parseCmdLineArgs()
 
@@ -49,9 +51,9 @@ if __name__ == "__main__":
 
     for env, env_df in split_over_column(df, col='environment'):
         for alg, alg_df in split_over_column(env_df, col='algorithm'):            
-            best_alpha = {}
-            for goal_id, goal_df in alg_df.groupby('environment.goal_id'):
-                if (int(goal_id) + 1) % 5 == 0: 
+            if alg == THIS_AGENT: 
+                best_alpha = {}
+                for goal_id, goal_df in alg_df.groupby('environment.goal_id'):
                     alpha2auc = {}
                     for alpha in goal_df['optimizer.alpha'].unique():
                         xs, ys = extract_learning_curves(goal_df, (alpha,), metric='return', interpolation=None)
@@ -69,9 +71,9 @@ if __name__ == "__main__":
                         alpha2auc[alpha] = np.mean(auc)
                     
                     best_alpha[goal_id] = max(alpha2auc, key=alpha2auc.get)
-                    
-            print(best_alpha)          
-            x = list(map(int, best_alpha.keys()))
-            y = list(best_alpha.values())  
-            plt.plot(x, y, '.')     
-            plt.show()   
+                        
+                print(best_alpha)          
+                x = list(map(int, best_alpha.keys()))
+                y = list(best_alpha.values())  
+                plt.plot(x, y, '.')     
+                plt.show()   
