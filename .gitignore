@@ -3,6 +3,7 @@ checkpoints/
 results
 results/
 results.tar*
+results_old/
 .tmp/
 *.out
 

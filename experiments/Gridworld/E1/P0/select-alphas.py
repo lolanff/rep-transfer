@@ -55,9 +55,10 @@ if __name__ == "__main__":
                 best_alpha = {}
                 for goal_id, goal_df in alg_df.groupby('environment.goal_id'):
                     alpha2auc = {}
+                    assert len(goal_df['optimizer.alpha'].unique()) == 5   # check all 5 alphas are there
                     for alpha in goal_df['optimizer.alpha'].unique():
                         xs, ys = extract_learning_curves(goal_df, (alpha,), metric='return', interpolation=None)
-                
+                        assert len(xs) == 5   # check all 5 seeds are there
                         # Every N steps we record the average return of the last n episodes
                         N = 10000
                         n = 100
@@ -72,6 +73,7 @@ if __name__ == "__main__":
                     
                     best_alpha[goal_id] = max(alpha2auc, key=alpha2auc.get)
                         
+                assert len(best_alpha) == 35  # check all goals are there
                 print(best_alpha)          
                 x = list(map(int, best_alpha.keys()))
                 y = list(best_alpha.values())  
