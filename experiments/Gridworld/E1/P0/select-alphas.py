@@ -71,7 +71,7 @@ if __name__ == "__main__":
                             auc.append(np.sum(ave_r))
                         alpha2auc[alpha] = np.mean(auc)
                     
-                    best_alpha[goal_id] = max(alpha2auc, key=alpha2auc.get)
+                    best_alpha[goal_id] = max(alpha2auc, key=alpha2auc.get) # type: ignore
                         
                 assert len(best_alpha) == 35  # check all goals are there
                 print(best_alpha)          
