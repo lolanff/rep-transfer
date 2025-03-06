@@ -12,39 +12,59 @@ from experiment.tools import parseCmdLineArgs
 import jax.numpy as jnp
 import numpy as np
 import time
+import pandas as pd
 
 setDefaultConference('jmlr')
 path, should_save, save_type = parseCmdLineArgs()
 
 # Input params
-chk_path = 'checkpoints/results/Gridworld/A0/P1/pretrain/DQN-ReLU-A'
+chk_path = ['checkpoints/results/Gridworld/A0/P1/pretrain/DQN-ReLU-A', 'checkpoints/results/Gridworld/A0/P1/pretrain/DQNAux-ReLU-A']
 idx = [0, 1, 2, 3, 4]    # enter the checkpoint indices
-Lmax = 1     # Please enter the largest average Lipschitz constant across all reps. Ask Han for the correct value.
 
 # Load state samples from Han et al's repository
 current_states = np.load("analysis/Gridworld/data/transition_current_states.npy")
 next_states = np.load("analysis/Gridworld/data/transition_next_states.npy")
 
-def main(): 
-    for i in idx:
-        # Load the agent in the checkpoint
-        with lzma.open(chk_path + f'/{i}/chk.pkl.xz', 'rb') as f:
-            chk_storage = pickle.load(f)
-        agent = chk_storage["a"]
+def main():
+    df = pd.DataFrame(columns=['algorithm', 'seed', 'Complexity Reduction', 'Dynamics Awareness', 'Diversity', 'Orthogonality', 'Sparsity'])
+    
+    def add_entry(df, algorithm, seed, cr, da, d, o, s):
+        new_entry = pd.DataFrame([[algorithm, seed, cr, da, d, o, s]], columns=df.columns)
+        print(new_entry)
+        return pd.concat([df, new_entry], ignore_index=True)
+    
+    for alg in chk_path:
+        for i in idx:
+            # Load the agent in the checkpoint
+            with lzma.open(alg + f'/{i}/chk.pkl.xz', 'rb') as f:
+                chk_storage = pickle.load(f)
+            agent = chk_storage["a"]
 
-         # Compute features and action values
-        phi = agent.phi(agent.state.target_params, current_states).out 
-        phi_p = agent.phi(agent.state.target_params, next_states).out 
-        q = agent.q(agent.state.target_params, phi)
-        v = jnp.max(q, axis=1)
+            # Compute features and action values
+            phi = agent.phi(agent.state.params, current_states).out 
+            phi_p = agent.phi(agent.state.params, next_states).out 
+            q = agent.q(agent.state.params, phi)
+            v = jnp.max(q, axis=1)
 
-        print(f'Complexity reduction of Rep #{i} is {complexity_reduction(phi, v, Lmax)}.')
-        print(f'Dynamics awareness of Rep #{i} is {dynamics_awareness(agent, phi, phi_p)}.')
-        print(f'Diversity of Rep #{i} is {diversity(phi, v)}.')
-        print(f'Orthogonality of Rep #{i} is {orthogonality(phi)}.')
-        print(f'Sparsity of Rep #{i} is {sparsity(phi)}.')
+            cr = complexity_reduction_unnormalized(phi, v)
+            print(f'Complexity reduction of Rep #{i} is {cr}.')
+            da = dynamics_awareness(agent, phi, phi_p)
+            print(f'Dynamics awareness of Rep #{i} is {da}.')
+            d = diversity(phi, v)
+            print(f'Diversity of Rep #{i} is {d}.')
+            o = orthogonality(phi)
+            print(f'Orthogonality of Rep #{i} is {o}.')
+            s = sparsity(phi)
+            print(f'Sparsity of Rep #{i} is {s}.')
+            
+            df = add_entry(df, alg.split('/')[-1], i, cr, da, d, o, s)
+        
+    # Renormalize CR
+    df['CR'] = 1 - df['CR'] / df['CR'].max()
+    
+    df.to_csv(f"{path}/results.csv")
  
-def complexity_reduction(phi, v, Lmax):   
+def complexity_reduction_unnormalized(phi, v):   
     # Compute pairwise distances
     Ds = []
     Dv = []
@@ -59,7 +79,7 @@ def complexity_reduction(phi, v, Lmax):
     epsilon = 1e-10  # small value to prevent division by 0 (not explicitly stated in the paper)
     ratio = Dv/(Ds + epsilon) 
 
-    return 1 - np.mean(ratio) / Lmax
+    return np.mean(ratio)
 
 def dynamics_awareness(agent, phi, phi_p):   
     # Create a random state samples by permuting "current_states"
