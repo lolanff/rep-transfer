@@ -1,0 +1,151 @@
+# %%
+from copy import deepcopy
+import json
+from itertools import product
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import os
+
+template = {
+    "agent": "DQN-FTA-transfer",
+    "problem": "Gridworld",
+    "total_steps": 100000,
+    "episode_cutoff": 100,
+    "metaParameters": {
+        "experiment": {
+            "load": {
+                "path": "results/Gridworld/A0/P4/pretrain/DQN-FTA-A",
+                "config": {
+                    "a": {
+                        "buffer": False,
+                        "state": {
+                            "optim": False,
+                            "params": {
+                                "phi": True,
+                                "q": False
+                            },
+                            "target_params": {
+                                "phi": True,
+                                "q": False
+                            }
+                        }
+                    }
+                }
+            },
+            "seed_offset": 30000
+        },
+        "epsilon": 0.1,
+        "target_refresh": 64,
+        "buffer_type": "uniform",
+        "buffer_size": 10000,
+        "batch": 32,
+        "n_step": 1,
+        "normalizer": {
+            "state": {
+                "coeff": 255.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": [
+                0.001,
+                0.0003,
+                0.0001,
+                0.00003,
+                0.00001
+            ],
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeNetFTA",
+            "hidden": 32,
+            "eta": 0.2,
+            "frozen": True
+        },
+        "environment": {
+            "goal_id": [
+                "0",
+                "5",
+                "10",
+                "15",
+                "20",
+                "25",
+                "30",
+                "35",
+                "40",
+                "45",
+                "50",
+                "55",
+                "60",
+                "65",
+                "70",
+                "75",
+                "80",
+                "85",
+                "90",
+                "95",
+                "100",
+                "105",
+                "110",
+                "115",
+                "120",
+                "125",
+                "130",
+                "135",
+                "140",
+                "145",
+                "150",
+                "155",
+                "160",
+                "165",
+                "170"
+            ]
+        }
+    }
+}
+
+df_hyper_path = Path()
+df = pd.read_csv(df_hyper_path / "../P2/hyperparameter_collector.csv", index_col=0)
+#%%
+gridworld_transfer_path = Path("transfer")
+gridworld_transfer_path.mkdir(exist_ok=True)
+#%%
+agents = [("DQN-FTA-transfer", "results/Gridworld/A0/P4/pretrain/DQN-FTA-A")]
+
+#%%
+goals = list(range(0, 171, 5))
+goals
+#%%
+
+gridworld_transfer_json_paths = []
+
+for agent, goal in product(agents, goals):
+    gridworld_transfer = deepcopy(template)
+    gridworld_transfer["agent"] = agent[0] + "-" + str(goal)
+    gridworld_transfer["metaParameters"]["environment"]["goal_id"] = str(goal)
+    gridworld_transfer["metaParameters"]["experiment"]["load"]["path"] = agent[1]
+    alpha = df[(df["Algorithm"] == (agent[0] + "-sweep")) & (df["Goal"] == goal)]["Value"].item()
+    assert alpha is not None
+    gridworld_transfer["metaParameters"]["optimizer"]["alpha"] = alpha
+    gridworld_transfer_json_path = gridworld_transfer_path / f"{gridworld_transfer['agent']}.json"
+    gridworld_transfer_json_paths.append(gridworld_transfer_json_path)
+    with open(gridworld_transfer_json_path, "w") as f:
+        gridworld_scratch_best = json.dump(gridworld_transfer, f, indent=4)
+
+#%%
+num_split = 1
+gridworld_transfer_json_paths_segs = np.array_split(gridworld_transfer_json_paths, num_split)
+
+# %%
+for i, gridworld_transfer_json_paths in enumerate(gridworld_transfer_json_paths_segs):
+    script_name = f"../../../../scripts/A1-P3-{i}.sh"
+    with open(script_name, "w") as f:
+        f.write("#!/bin/bash\n")
+        f.write("set -e\n")
+        for gridworld_transfer_json_path in gridworld_transfer_json_paths:
+            f.write(f"python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/{gridworld_transfer_json_path} --cpus 16\n")
+    os.chmod(script_name, 0o755)  
+
+# %%

@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-0.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-5.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-10.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-15.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-20.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-25.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-30.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-35.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-40.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-45.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-50.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-55.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-60.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-65.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-70.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-75.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-80.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-85.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-90.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-95.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-100.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-105.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-110.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-115.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-120.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-125.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-130.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-135.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-140.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-145.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-150.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-155.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-160.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-165.json --cpus 16
+python scripts/local.py --runs 5 -e experiments/Gridworld/A1/P3/transfer/DQN-FTA-transfer-170.json --cpus 16
