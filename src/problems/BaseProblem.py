@@ -42,5 +42,11 @@ class BaseProblem:
             self.params['gamma'] = self.gamma
 
         Agent = getAgent(self.exp.agent)
-        self.agent = Agent(self.observations, self.actions, self.params, self.collector, self.seed)
+        
+        observations = self.observations
+        
+        if self.params['buffer_type'] == 'rnn_uniform':
+            observations = (1,) + self.observations
+
+        self.agent = Agent(observations, self.actions, self.params, self.collector, self.seed)
         return self.agent

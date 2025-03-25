@@ -1,6 +1,7 @@
 import jax
 import optax
 import numpy as np
+from algorithms.nn.components.RNNReplayBuffer import RNNReplayBuffer
 import utils.chex as cxu
 
 from abc import abstractmethod
@@ -39,7 +40,10 @@ class NNAgent(BaseAgent):
         # ---------------------
         builder = NetworkBuilder(observations, self.rep_params, seed)
         self._build_heads(builder)
-        self.phi = builder.getFeatureFunction()
+        if len(observations) > 3:
+            self.phi = builder.getRecurrentFeatureFunction()
+        else:
+            self.phi = builder.getFeatureFunction()
         net_params = builder.getParams()
 
         # ---------------
@@ -58,10 +62,11 @@ class NNAgent(BaseAgent):
         self.buffer_size = params['buffer_size']
         self.batch_size = params['batch']
         self.update_freq = params.get('update_freq', 1)
+        self.sequence_length = params.get('sequence_length', 1)
 
         self.normalizer_params = params.get('normalizer', {})
 
-        self.buffer = build_buffer(
+        self.buffer = RNNReplayBuffer(self.buffer_size, self.n_step, self.rng, self.sequence_length) if params['buffer_type'] == 'rnn_uniform' else build_buffer(
             buffer_type=params['buffer_type'],
             max_size=self.buffer_size,
             lag=self.n_step,
@@ -104,7 +109,7 @@ class NNAgent(BaseAgent):
     # --------------------------
     # -- Base agent interface --
     # --------------------------
-    def values(self, x: np.ndarray):
+    def values(self, x: np.ndarray, *args, **kwargs):
         x = np.asarray(x)
 
         # if x is a vector, then jax handles a lack of "batch" dimension gracefully
@@ -112,10 +117,10 @@ class NNAgent(BaseAgent):
         # if x is a tensor, jax does not handle lack of "batch" dim gracefully
         if len(x.shape) > 1:
             x = np.expand_dims(x, 0)
-            q = self._values(self.state, x)[0]
+            q = self._values(self.state, x, *args, **kwargs)[0]
 
         else:
-            q = self._values(self.state, x)
+            q = self._values(self.state, x, *args, **kwargs)
 
         return jax.device_get(q)
 

@@ -11,6 +11,97 @@ from utils.functions import fta
 
 ModuleBuilder = Callable[[], Callable[[jax.Array | np.ndarray], jax.Array]]
 
+class MazeGRUNetReLU(hk.Module):
+    def __init__(self, hidden: int, name: str = ""):
+        super().__init__(name=name)
+        self.hidden = hidden
+        w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
+        b_conv_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
+
+        self.conv1 = hk.Conv3D(
+            output_channels=32,
+            kernel_shape=(1, 4, 4),
+            stride=1,
+            padding=[(0, 0), (1, 1), (1, 1)],
+            w_init=w_conv_init,
+            b_init=b_conv_init,
+            name="conv_1"
+        )
+
+        self.conv2 = hk.Conv3D(
+            output_channels=16,
+            kernel_shape=(1, 4, 4),
+            stride=(1, 2, 2),
+            padding=[(0, 0), (2, 2), (2, 2)],
+            w_init=w_conv_init,
+            b_init=b_conv_init,
+            name="conv_2"
+        )
+        self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
+
+        self.gru = hk.GRU(self.hidden, name='gru')
+        
+        self.phi = hk.Flatten(preserve_dims=2, name='phi')
+
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+        """
+        Args:
+          x: Input tensor with shape [N, T, ...]
+          reset: Optional binary flag sequence with shape [N, T] indicating when to reset the GRU state.
+                 For example, at episode boundaries.
+          carry: The initial hidden state for RNN.
+        
+        Returns:
+          outputs_sequence: Representation vectors sequence.
+          states_sequence: The hidden states sequence.
+        """
+        # Add temporal dimension if given a single slice
+        if (len(x.shape) < 5):
+            x = x[:, None]
+        
+        N, T = x.shape[0], x.shape[1]
+
+        h = self.conv1(x)
+        h = jax.nn.relu(h)
+        h = self.conv2(h)
+        h = jax.nn.relu(h)
+        
+        h = self.flatten(h)
+        
+        if reset is None:
+            reset = jnp.zeros((N, T), dtype=bool)
+        if carry is None:
+            carry = self.gru.initial_state(batch_size=1)
+
+        def process_sequence(features_seq, reset_seq):
+            # Process a single sample
+            
+            def gru_step(prev_state, inputs):
+                frame_feat, reset_flag = inputs
+                reset_state = self.gru.initial_state(batch_size=1)
+                # Reset state if flag is True.
+                prev_state = jax.lax.select(reset_flag, reset_state, prev_state)
+                # GRU expects inputs with a batch dimension.
+                output, next_state = self.gru(frame_feat[None, :], prev_state)
+                # Remove the extra batch dimension and return both output and next_state.
+                return next_state, (output[0], next_state[0])
+            
+            # Use hk.scan to unroll the GRU over time.
+            final_state, (outputs_seq, state_seq) = hk.scan(gru_step, carry, (features_seq, reset_seq))
+
+            return outputs_seq, state_seq
+
+        # Vectorize the per-sequence unroll over the batch dimension.
+        # h has shape [N, T, ...] and reset has shape [N, T].
+        outputs_sequence, states_sequence = jax.vmap(process_sequence)(h, reset)
+        
+        outputs_sequence = jax.nn.relu(outputs_sequence)
+        
+        outputs_sequence = self.phi(outputs_sequence)
+
+        # Return both the GRU outputs and hidden states across the entire sequence.
+        return outputs_sequence, states_sequence
+
 class NetworkBuilder:
     def __init__(self, input_shape: Tuple, params: Dict[str, Any], seed: int):
         self._input_shape = tuple(input_shape)
@@ -35,6 +126,12 @@ class NetworkBuilder:
 
         return _inner
 
+    def getRecurrentFeatureFunction(self):
+        def _inner(params: Any, x: jax.Array | np.ndarray, carry: jax.Array | np.ndarray = None):
+            return self._feat_net.apply(params['phi'], x, carry=carry)
+
+        return _inner
+
     def addHead(self, module: ModuleBuilder, name: Optional[str] = None, grad: bool = True):
         assert not self._retrieved_params, 'Attempted to add head after params have been retrieved'
         _state = {}
@@ -50,7 +147,11 @@ class NetworkBuilder:
             return out
 
         sample_in = jnp.zeros((1,) + self._input_shape)
-        sample_phi = self._feat_net.apply(self._feat_params, sample_in).out
+
+        if 'GRU' in self._h_params['type']:
+            sample_phi = self._feat_net.apply(self._feat_params, sample_in)[0]
+        else:
+            sample_phi = self._feat_net.apply(self._feat_params, sample_in).out
 
         self._rng, rng = jax.random.split(self._rng)
         h_net = hk.without_apply_rng(hk.transform(_builder))
@@ -78,7 +179,7 @@ def reluLayers(layers: List[int], name: Optional[str] = None):
     return out
 
 def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
-    def _inner(x: jax.Array):
+    def _inner(x: jax.Array, *args, **kwargs):
         name = params['type']
         hidden = params['hidden']
 
@@ -153,6 +254,10 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
                 lambda x: fta(x, eta=params['eta'], tiles=20, lower_bound=-2, upper_bound=2),
                 hk.Flatten(name='phi'),
             ]
+            
+        elif name == 'MazeGRUNetReLU':
+            net = MazeGRUNetReLU(hidden=hidden, name='MazeGRUNetReLU')
+            return net(x, *args, **kwargs)
 
         else:
             raise NotImplementedError()

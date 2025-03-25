@@ -23,6 +23,8 @@ dependencies = [
     'foragerenv @ git+https://github.com/andnp/forager',
     
     'gymnasium[atari, box2d]>=1.0.0',
+    'gym-minigrid',
+    'minigrid',
     'optuna',
     'ale_py',
     'pillow',
