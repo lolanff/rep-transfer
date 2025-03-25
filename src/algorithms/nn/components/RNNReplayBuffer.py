@@ -28,12 +28,8 @@ class RNNReplayBuffer(ReplayBuffer):
     # TODO: it is to be noted that it does not handle the discrepency in transition as new experience overwrite old ones in the circular buffer, that is, it does not recognize the boundary of the latest frame vs the next frame in order of idx who is the old one
     # returns flattened sequences
     def sample(self, n: int) -> Batch:
-        reject_samples = True
-        while reject_samples:
-            idxs = self._sampler.sample(n)
-            idxs = IDXs((idxs[:, None] + np.arange(self.sequence_length)).ravel())
-            if max(idxs) < self.size():
-                reject_samples = False  # perform rejection sampling to ensure no out of index
+        idxs = self._rng.integers(0, self._idx_mapper.size - self.sequence_length, size=n, dtype=np.int64)
+        idxs = IDXs((idxs[:, None] + np.arange(self.sequence_length)).ravel())
 
         samples = self._storage.get(idxs)
         return samples
