@@ -97,7 +97,7 @@ class DRQN(NNAgent):
             return
 
         # skip updates if the buffer isn't full yet
-        if self.buffer.size() <= self.batch_size:
+        if self.buffer.size() <= self.batch_size * self.sequence_length:
             return
 
         self.updates += 1

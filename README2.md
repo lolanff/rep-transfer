@@ -11,5 +11,6 @@ apptainer exec -C -B .:$HOME pyproject.sif python scripts/slurm.py --cluster clu
 
 4. The slurm scripts will be saved in `slurm_scripts/`. To submit them all, run `./slurm_scripts/submit_all.sh`.
 
+*Update Environment*
 ---
 Acknowledgement: This repository is adapted from erfanMhi/LTA-Representation-Properties, andnp/rl-control-template, and steventango/sparse-feature-transfer.
