@@ -18,7 +18,7 @@ setDefaultConference('jmlr')
 path, should_save, save_type = parseCmdLineArgs()
 
 # Input params
-chk_path = ['checkpoints/results/Gridworld/A0/P1/pretrain/DQN-ReLU-A', 'checkpoints/results/Gridworld/A0/P1/pretrain/DQNAux-ReLU-A']
+chk_path = ['checkpoints/results/Gridworld/A0/P4/pretrain/DQN-FTA-A']
 idx = [0, 1, 2, 3, 4]    # enter the checkpoint indices
 
 # Load state samples from Han et al's repository
