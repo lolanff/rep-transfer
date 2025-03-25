@@ -2,7 +2,7 @@ import numpy as np
 from abc import abstractmethod
 from typing import Any
 from ReplayTables._utils.logger import logger
-from ReplayTables.interface import Timestep, LaggedTimestep, Batch, EID, EIDs, Item, IDX, IDXs
+from ReplayTables.interface import Timestep, LaggedTimestep, Batch, Item
 from ReplayTables.ingress.IndexMapper import IndexMapper
 from ReplayTables.ingress.CircularMapper import CircularMapper
 from ReplayTables.ingress.LagBuffer import LagBuffer
@@ -29,7 +29,7 @@ class RNNReplayBuffer(ReplayBuffer):
     # returns flattened sequences
     def sample(self, n: int) -> Batch:
         idxs = self._rng.integers(0, self._idx_mapper.size - self.sequence_length, size=n, dtype=np.int64)
-        idxs = IDXs((idxs[:, None] + np.arange(self.sequence_length)).ravel())
+        idxs = (idxs[:, None] + np.arange(self.sequence_length)).ravel()
 
         samples = self._storage.get(idxs)
         return samples

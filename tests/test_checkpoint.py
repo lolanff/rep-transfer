@@ -3,7 +3,7 @@ from copy import deepcopy
 import chex
 import pytest
 from PyExpUtils.collection.Collector import Collector
-from RlGlue import RlGlue
+from rlglue import RlGlue
 
 from experiment import ExperimentModel
 from problems.registry import getProblem

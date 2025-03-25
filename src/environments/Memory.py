@@ -1,5 +1,5 @@
 import numpy as np
-from RlGlue.environment import BaseEnvironment
+from rlglue.environment import BaseEnvironment
 import gymnasium as gym
 from minigrid.wrappers import ImgObsWrapper
 
@@ -17,7 +17,7 @@ class Memory(BaseEnvironment):
 
     def step(self, action):
         observation, reward, terminated, truncated, _ = self.env.step(action)
-        return reward, observation, terminated or truncated, self.get_info()
+        return observation, reward, terminated, truncated, self.get_info()
         
     def get_info(self):
         return {"gamma": self.gamma}

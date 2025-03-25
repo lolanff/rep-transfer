@@ -8,7 +8,7 @@ import socket
 import logging
 import argparse
 import numpy as np
-from RlGlue import RlGlue
+from rlglue import RlGlue
 from experiment import ExperimentModel
 from utils.checkpoint import Checkpoint
 from utils.preempt import TimeoutHandler
@@ -112,7 +112,7 @@ for idx in indices:
         chk.maybe_save()
         interaction = glue.step()
 
-        if interaction.t or (exp.episode_cutoff > -1 and glue.num_steps >= exp.episode_cutoff):
+        if interaction.term or (exp.episode_cutoff > -1 and glue.num_steps >= exp.episode_cutoff):
             # allow agent to cleanup traces or other stateful episodic info
             agent.cleanup()
 
