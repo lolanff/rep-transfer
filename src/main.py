@@ -27,6 +27,7 @@ parser.add_argument('-i', '--idxs', nargs='+', type=int, required=True)
 parser.add_argument('--save_path', type=str, default='./')
 parser.add_argument('--checkpoint_path', type=str, default='./checkpoints/')
 parser.add_argument('--silent', action='store_true', default=False)
+parser.add_argument('--debug', action='store_true', default=False)
 parser.add_argument('--gpu', action='store_true', default=False)
 
 args = parser.parse_args()
@@ -41,7 +42,7 @@ jax.config.update('jax_platform_name', device)
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger('exp')
 prod = 'cdr' in socket.gethostname() or args.silent
-if not prod:
+if args.debug or not prod:
     logger.setLevel(logging.DEBUG)
 
 

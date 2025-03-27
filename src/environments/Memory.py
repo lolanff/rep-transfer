@@ -9,7 +9,7 @@ class Memory(BaseEnvironment):
         env = gym.make("MiniGrid-MemoryS11-v0", render_mode="rgb_array", max_steps=max_steps)
         self.rng = np.random.RandomState(seed)
         self.env = ImgObsWrapper(env)
-        self.gamma = 1 # The environment itself give reward based on time
+        self.gamma = 0.99
     
     def start(self):
         observation, _ = self.env.reset(seed=self.rng.randint(0, 2**32))

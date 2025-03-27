@@ -10,4 +10,4 @@ class Memory(BaseProblem):
         self.env = Env(max_steps=self.env_params.get('max_steps', 100), seed=self.seed)
         self.actions = 3
         self.observations = (7, 7, 3)
-        self.gamma = 1
+        self.gamma = 0.99
