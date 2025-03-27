@@ -5,8 +5,8 @@ from minigrid.wrappers import ImgObsWrapper
 
 class Memory(BaseEnvironment):
     def __init__(self, max_steps=100, seed=np.random.randint(int(1e5))):
-        # A reward of ‘1 - 0.9 * (step_count / max_steps)’ is given for success, and ‘0’ for failure.
-        env = gym.make("MiniGrid-MemoryS11-v0", render_mode="rgb_array", max_steps=max_steps)
+        # The reward is changed to 1 if success, 0 otherwise
+        env = gym.make("MiniGrid-MemoryS7-v0", render_mode="rgb_array", max_steps=max_steps)
         self.rng = np.random.RandomState(seed)
         self.env = ImgObsWrapper(env)
         self.gamma = 0.99
@@ -17,7 +17,7 @@ class Memory(BaseEnvironment):
 
     def step(self, action):
         observation, reward, terminated, truncated, _ = self.env.step(action)
-        return observation, reward, terminated, truncated, self.get_info()
+        return observation, float(reward != 0), terminated, truncated, self.get_info()
         
     def get_info(self):
         return {"gamma": self.gamma}

@@ -1,7 +1,7 @@
 {
     "agent": "DRQN-ReLU-Memory",
     "problem": "Memory",
-    "total_steps": 100000,
+    "total_steps": 50000,
     "episode_cutoff": 100,
     "metaParameters": {
         "experiment": {
@@ -14,7 +14,7 @@
         "buffer_size": 10000,
         "batch": 32,
         "n_step": 1,
-        "sequence_length": 16,
+        "sequence_length": 32,
         "normalizer": {
             "state": {
                 "coeff": 255.0
