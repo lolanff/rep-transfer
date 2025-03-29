@@ -127,8 +127,8 @@ class NetworkBuilder:
         return _inner
 
     def getRecurrentFeatureFunction(self):
-        def _inner(params: Any, x: jax.Array | np.ndarray, carry: jax.Array | np.ndarray = None):
-            return self._feat_net.apply(params['phi'], x, carry=carry)
+        def _inner(params: Any, x: jax.Array | np.ndarray, reset: jax.Array | np.ndarray = None, carry: jax.Array | np.ndarray = None):
+            return self._feat_net.apply(params['phi'], x, reset=reset, carry=carry)
 
         return _inner
 

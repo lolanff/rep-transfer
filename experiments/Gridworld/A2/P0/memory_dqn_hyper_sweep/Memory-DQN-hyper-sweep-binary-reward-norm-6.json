@@ -16,7 +16,7 @@
         "n_step": 1,
         "normalizer": {
             "state": {
-                "coeff": 255.0
+                "coeff": 6.0
             }
         },
         "optimizer": {
@@ -31,7 +31,7 @@
             "frozen": false
         },
         "environment": {
-            "binary_reward": false
+            "binary_reward": true
         }
     }
 }

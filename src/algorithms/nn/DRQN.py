@@ -147,8 +147,9 @@ class DRQN(NNAgent):
         
         x = batch.x.reshape(n_samples, self.sequence_length, *feature_dims)
         xp = batch.xp.reshape(n_samples, self.sequence_length, *feature_dims)
-        phi = self.phi(params, x)[0]
-        phi_p = self.phi(target, xp)[0]
+        term = batch.terminal.reshape(n_samples, self.sequence_length)
+        phi = self.phi(params, x, reset=term)[0]
+        phi_p = self.phi(target, xp, reset=term)[0]
 
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)

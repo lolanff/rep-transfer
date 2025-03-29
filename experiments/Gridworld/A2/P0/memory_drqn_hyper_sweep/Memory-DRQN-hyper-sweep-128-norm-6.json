@@ -1,7 +1,7 @@
 {
     "agent": "DRQN-ReLU-Memory",
     "problem": "Memory",
-    "total_steps": 50000,
+    "total_steps": 100000,
     "episode_cutoff": 100,
     "metaParameters": {
         "experiment": {
@@ -14,15 +14,15 @@
         "buffer_size": 10000,
         "batch": 32,
         "n_step": 1,
-        "sequence_length": 32,
+        "sequence_length": 128,
         "normalizer": {
             "state": {
-                "coeff": 255.0
+                "coeff": 6.0
             }
         },
         "optimizer": {
             "name": "ADAM",
-            "alpha": [0.001, 0.0003, 0.0001, 0.00003, 0.00001],
+            "alpha": [0.01, 0.001, 0.0001, 0.00001],
             "beta1": 0.9,
             "beta2": 0.999
         },
@@ -32,7 +32,7 @@
             "frozen": false
         },
         "environment": {
-            "max_steps": 100
+            "binary_reward": false
         }
     }
 }

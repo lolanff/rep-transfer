@@ -1,5 +1,5 @@
 {
-    "agent": "DQN-ReLU-Memory",
+    "agent": "DRQN-ReLU-Memory",
     "problem": "Memory",
     "total_steps": 100000,
     "episode_cutoff": 100,
@@ -10,13 +10,14 @@
         },
         "epsilon": 0.1,
         "target_refresh": 64,
-        "buffer_type": "uniform",
+        "buffer_type": "rnn_uniform",
         "buffer_size": 10000,
         "batch": 32,
         "n_step": 1,
+        "sequence_length": 128,
         "normalizer": {
             "state": {
-                "coeff": 255.0
+                "coeff": 6.0
             }
         },
         "optimizer": {
@@ -26,12 +27,12 @@
             "beta2": 0.999
         },
         "representation": {
-            "type": "MazeNetReLU",
+            "type": "MazeGRUNetReLU",
             "hidden": 32,
             "frozen": false
         },
         "environment": {
-            "binary_reward": false
+            "binary_reward": true
         }
     }
 }
