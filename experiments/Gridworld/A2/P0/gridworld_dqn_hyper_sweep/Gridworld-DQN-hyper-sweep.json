@@ -1,38 +1,37 @@
 {
-    "agent": "DRQN-ReLU-Memory",
-    "problem": "Memory",
+    "agent": "DQN-ReLU-scratch-0",
+    "problem": "Gridworld",
     "total_steps": 100000,
     "episode_cutoff": 100,
     "metaParameters": {
         "experiment": {
             "load": false,
-            "seed_offset": 0
+            "seed_offset": 2000
         },
         "epsilon": 0.1,
         "target_refresh": 64,
-        "buffer_type": "rnn_uniform",
+        "buffer_type": "uniform",
         "buffer_size": 10000,
         "batch": 32,
         "n_step": 1,
-        "sequence_length": 128,
         "normalizer": {
             "state": {
-                "coeff": 6.0
+                "coeff": 255.0
             }
         },
         "optimizer": {
             "name": "ADAM",
-            "alpha": [0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001],
+            "alpha": [0.001, 0.0003, 0.0001, 0.00003, 0.00001],
             "beta1": 0.9,
             "beta2": 0.999
         },
         "representation": {
-            "type": "MazeGRUNetReLU",
+            "type": "MazeNetReLU",
             "hidden": 32,
             "frozen": false
         },
         "environment": {
-            "binary_reward": true
+            "goal_id": "0"
         }
     }
 }
