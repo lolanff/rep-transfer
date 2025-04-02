@@ -11,6 +11,90 @@ from utils.functions import fta
 
 ModuleBuilder = Callable[[], Callable[[jax.Array | np.ndarray], jax.Array]]
 
+class GRU(hk.Module):
+    def __init__(self, hidden: int, name: str = ""):
+        super().__init__(name=name)
+        self.hidden = hidden
+        self.gru = hk.GRU(self.hidden, name='gru_inner')
+        
+    def gru_step(self, prev_state, inputs):
+        frame_feat, reset_flag = inputs
+        # Reset state if flag is True.
+        prev_state = jax.lax.select(reset_flag, self.gru.initial_state(batch_size=1), prev_state)
+        # GRU expects inputs with a batch dimension.
+        output, next_state = self.gru(frame_feat[None, :], prev_state)
+        # Remove the extra batch dimension and return both output and next_state.
+        return next_state, (output[0], next_state[0])
+
+    def process_sequence(self, carry, features_seq, reset_seq):
+        final_state, (outputs_seq, state_seq) = hk.scan(self.gru_step, carry[None, :], (features_seq, reset_seq))
+        return outputs_seq, state_seq
+    
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+        """
+        Args:
+          x: Input tensor with shape [N, T, ...]
+          reset: Optional binary flag sequence with shape [N, T] indicating when to reset the GRU state.
+                 For example, at episode boundaries.
+          carry: The initial hidden state for RNN.
+        
+        Returns:
+          outputs_sequence: Representation vectors sequence.
+          states_sequence: The hidden states sequence.
+        """
+        
+        N, T = x.shape[0], x.shape[1]
+        
+        if reset is None:
+            reset = jnp.zeros((N, T), dtype=bool)
+        if carry is None:
+            carry = self.gru.initial_state(batch_size=N)
+
+        # Vectorize the per-sequence unroll over the batch dimension.
+        # x has shape [N, T, ...] and reset has shape [N, T].
+        outputs_sequence, states_sequence = jax.vmap(self.process_sequence)(carry, x, reset)
+
+        # Return both the GRU outputs and hidden states across the entire sequence.
+        return outputs_sequence, states_sequence
+
+class TMazeGRUNetReLU(hk.Module):
+    def __init__(self, hidden: int, name: str = ""):
+        super().__init__(name=name)
+        self.hidden = hidden
+
+        self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
+
+        self.gru = GRU(self.hidden, name='gru')
+        
+        self.phi = hk.Flatten(preserve_dims=2, name='phi')
+
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+        """
+        Args:
+          x: Input tensor with shape [N, T, ...]
+          reset: Optional binary flag sequence with shape [N, T] indicating when to reset the GRU state.
+                 For example, at episode boundaries.
+          carry: The initial hidden state for RNN.
+        
+        Returns:
+          outputs_sequence: Representation vectors sequence.
+          states_sequence: The hidden states sequence.
+        """
+        # Add temporal dimension if given a single slice
+        if (len(x.shape) < 5):
+            x = x[:, None]
+        
+        h = self.flatten(x)
+        
+        outputs_sequence, states_sequence = self.gru(h, reset, carry)
+        
+        outputs_sequence = jax.nn.relu(outputs_sequence)
+        
+        outputs_sequence = self.phi(outputs_sequence)
+
+        # Return both the GRU outputs and hidden states across the entire sequence.
+        return outputs_sequence, states_sequence
+
 class MazeGRUNetReLU(hk.Module):
     def __init__(self, hidden: int, name: str = ""):
         super().__init__(name=name)
@@ -39,7 +123,7 @@ class MazeGRUNetReLU(hk.Module):
         )
         self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
 
-        self.gru = hk.GRU(self.hidden, name='gru')
+        self.gru = GRU(self.hidden, name='gru')
         
         self.phi = hk.Flatten(preserve_dims=2, name='phi')
 
@@ -58,8 +142,6 @@ class MazeGRUNetReLU(hk.Module):
         # Add temporal dimension if given a single slice
         if (len(x.shape) < 5):
             x = x[:, None]
-        
-        N, T = x.shape[0], x.shape[1]
 
         h = self.conv1(x)
         h = jax.nn.relu(h)
@@ -68,32 +150,7 @@ class MazeGRUNetReLU(hk.Module):
         
         h = self.flatten(h)
         
-        if reset is None:
-            reset = jnp.zeros((N, T), dtype=bool)
-        if carry is None:
-            carry = self.gru.initial_state(batch_size=1)
-
-        def process_sequence(features_seq, reset_seq):
-            # Process a single sample
-            
-            def gru_step(prev_state, inputs):
-                frame_feat, reset_flag = inputs
-                reset_state = self.gru.initial_state(batch_size=1)
-                # Reset state if flag is True.
-                prev_state = jax.lax.select(reset_flag, reset_state, prev_state)
-                # GRU expects inputs with a batch dimension.
-                output, next_state = self.gru(frame_feat[None, :], prev_state)
-                # Remove the extra batch dimension and return both output and next_state.
-                return next_state, (output[0], next_state[0])
-            
-            # Use hk.scan to unroll the GRU over time.
-            final_state, (outputs_seq, state_seq) = hk.scan(gru_step, carry, (features_seq, reset_seq))
-
-            return outputs_seq, state_seq
-
-        # Vectorize the per-sequence unroll over the batch dimension.
-        # h has shape [N, T, ...] and reset has shape [N, T].
-        outputs_sequence, states_sequence = jax.vmap(process_sequence)(h, reset)
+        outputs_sequence, states_sequence = self.gru(h, reset, carry)
         
         outputs_sequence = jax.nn.relu(outputs_sequence)
         
@@ -254,10 +311,21 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
                 lambda x: fta(x, eta=params['eta'], tiles=20, lower_bound=-2, upper_bound=2),
                 hk.Flatten(name='phi'),
             ]
-            
+           
+        elif name == 'TMazeGRUNetReLU':
+            net = TMazeGRUNetReLU(hidden=hidden, name='TMazeGRUNetReLU')
+            return net(x, *args, **kwargs)
+         
         elif name == 'MazeGRUNetReLU':
             net = MazeGRUNetReLU(hidden=hidden, name='MazeGRUNetReLU')
             return net(x, *args, **kwargs)
+        
+        elif name == 'Linear':
+            layers = [
+                hk.Flatten(name='flatten'),
+                hk.Linear(hidden, name='linear'),
+                hk.Flatten(name='phi'),
+            ]
 
         else:
             raise NotImplementedError()
