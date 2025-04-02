@@ -1,6 +1,8 @@
 import Box2D     # we need to import this first because cedar is stupid
 import os
 import sys
+
+from environments.TMaze import TMaze
 sys.path.append(os.getcwd())
 
 import time
@@ -8,6 +10,7 @@ import socket
 import logging
 import argparse
 import numpy as np
+import jax.numpy as jnp
 from rlglue import RlGlue
 from experiment import ExperimentModel
 from utils.checkpoint import Checkpoint
@@ -107,6 +110,8 @@ for idx in indices:
         
     # Number of consecutive completion of experiments
     consecutive_completion_counter = 0
+    
+    ext_env = TMaze(corridor_length=1, seed=0)
 
     for step in range(glue.total_steps, exp.total_steps):
         collector.next_frame()
@@ -131,6 +136,14 @@ for idx in indices:
 
             episode = chk['episode']
             logger.debug(f'{episode} {step} {glue.total_reward} {avg_time:.4}ms {int(fps)}')
+            obs = ext_env.start().astype(jnp.float32)
+            carry = agent.values(obs)[1]
+            obs = ext_env.step(1)[0].astype(jnp.float32)
+            ext = ext_env.get_action_values()
+            val = agent.values(obs, carry=carry)[0]
+            val2 = agent.values(obs)[0]
+            logger.debug(f'{ext} {val} {val2}')
+            # logger.debug(f'{agent.non_zeros} {agent.running_average_grad} {agent.running_average} {agent.cum_loss/agent.steps}')
 
             # stop the experiment if condition met
             if not (exp.episode_cutoff > -1 and glue.num_steps >= exp.episode_cutoff):

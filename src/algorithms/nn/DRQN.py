@@ -3,7 +3,7 @@ from functools import partial
 from typing import Any, Dict, Tuple
 from PyExpUtils.collection.Collector import Collector
 from ReplayTables.ReplayBuffer import Batch
-
+from jax.tree_util import tree_flatten
 from algorithms.nn.NNAgent import NNAgent
 from representations.networks import NetworkBuilder
 from utils.jax import huber_loss, mse_loss
@@ -47,6 +47,12 @@ class DRQN(NNAgent):
             target_params=deepcopy(self.state.params), # without deepcopy, load_from_checkpoint overwrites params with target_params
             optim=self.state.optim,
         )
+        self.cum_loss = 0
+        self.running_average = 0
+        self.alpha = 0.01
+        self.running_average_grad = 0
+        self.term = None
+        self.non_zeros = 0
 
     # ------------------------
     # -- NN agent interface --
@@ -109,10 +115,18 @@ class DRQN(NNAgent):
         metrics = jax.device_get(metrics)
 
         priorities = metrics['delta']
+        cur_loss = metrics['loss']
+        grads = metrics['grad']
+        leaves, _ = tree_flatten(grads)
+        grad_norm = jnp.sqrt(sum([jnp.sum(jnp.square(g)) for g in leaves]))
+        self.cum_loss += cur_loss
+        self.running_average = (1 - self.alpha) * self.running_average + self.alpha * cur_loss
+        self.running_average_grad = (1 - self.alpha) * self.running_average_grad + self.alpha * grad_norm
+        self.term = metrics['term']
         self.buffer.update_batch(batch, priorities=priorities)
-
-        for k, v in metrics.items():
-            self.collector.collect(k, np.mean(v).item())
+        self.non_zeros = (1 - self.alpha) * self.non_zeros + self.alpha * jnp.count_nonzero(metrics['r'])
+        # for k, v in metrics.items():
+        #     self.collector.collect(k, np.mean(v).item())
 
         if self.updates % self.target_refresh == 0:
             self.state.target_params = self.state.params   # deepcopy not needed here because optax.apply_updates produces a new pytree as params at each update, so params becomes unlinked from target_params
@@ -133,6 +147,7 @@ class DRQN(NNAgent):
             target_params=state.target_params,
             optim=optim,
         )
+        metrics['grad'] = grad
 
         return new_state, metrics
 
@@ -141,31 +156,33 @@ class DRQN(NNAgent):
         # Reshape the batch to have (N, T, ...)
         n_samples, *feature_dims = batch.x.shape
         n_samples = n_samples // self.sequence_length
-
-        # For now, just use the weight on the last frame
-        weights = weights.reshape(n_samples, self.sequence_length)[:, -1]
         
         x = batch.x.reshape(n_samples, self.sequence_length, *feature_dims)
         xp = batch.xp.reshape(n_samples, self.sequence_length, *feature_dims)
         term = batch.terminal.reshape(n_samples, self.sequence_length)
         phi = self.phi(params, x, reset=term)[0]
         phi_p = self.phi(target, xp, reset=term)[0]
-
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
 
-        # After the representation layer, we just use the last
-        qs = self.q(params, phi[:, -1, ...])
-        qsp = self.q(target, phi_p[:, -1, ...])
+        # After the representation layer, we use all to train
+        qs = self.q(params, phi)
+        qs = qs.reshape(-1, qs.shape[-1])
+        qsp = self.q(target, phi_p)
+        qsp = qsp.reshape(-1, qsp.shape[-1])
 
-        a = batch.a.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
-        r = batch.r.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
-        gamma = batch.gamma.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
+        a = batch.a#.reshape(n_samples, self.sequence_length, 1)
+        r = batch.r#.reshape(n_samples, self.sequence_length, 1)
+        gamma = batch.gamma#.reshape(n_samples, self.sequence_length, 1)
         
         batch_loss = jax.vmap(q_loss, in_axes=0)
         losses, metrics = batch_loss(qs, a, r, gamma, qsp)
 
         chex.assert_equal_shape((weights, losses))
         loss = jnp.mean(weights * losses)
+        
+        metrics['loss'] = loss
+        metrics['term'] = term
+        metrics['r'] = r
 
         return loss, metrics
