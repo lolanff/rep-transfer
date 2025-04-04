@@ -2,12 +2,14 @@ from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Tuple
 from PyExpUtils.collection.Collector import Collector
-from ReplayTables.ReplayBuffer import Batch
+from ReplayTables.ReplayBuffer import Batch, LaggedTimestep
 from jax.tree_util import tree_flatten
 from algorithms.nn.NNAgent import NNAgent
+from algorithms.nn.components.RNNReplayBuffer import CarryBatch
 from representations.networks import NetworkBuilder
 from utils.jax import huber_loss, mse_loss
 from utils.hk import MultiLayerHead
+from ReplayTables.interface import Timestep
 from utils.policies import egreedy_probabilities, sample
 
 import jax
@@ -47,12 +49,6 @@ class DRQN(NNAgent):
             target_params=deepcopy(self.state.params), # without deepcopy, load_from_checkpoint overwrites params with target_params
             optim=self.state.optim,
         )
-        self.cum_loss = 0
-        self.running_average = 0
-        self.alpha = 0.01
-        self.running_average_grad = 0
-        self.term = None
-        self.non_zeros = 0
 
     # ------------------------
     # -- NN agent interface --
@@ -71,29 +67,25 @@ class DRQN(NNAgent):
         # if x is a tensor, jax does not handle lack of "batch" dim gracefully
         if len(x.shape) > 1:
             x = np.expand_dims(x, 0)
-            q, carry = self._values(self.state, x, *args, **kwargs)
+            q, carry, initial_carry = self._values(self.state, x, *args, **kwargs)
             q = q[0]
 
         else:
-            q, carry = self._values(self.state, x, *args, **kwargs)
+            q, carry, initial_carry = self._values(self.state, x, *args, **kwargs)
 
-        return jax.device_get(q), jax.device_get(carry)
+        return jax.device_get(q), jax.device_get(carry), jax.device_get(initial_carry)
 
     def policy(self, obs: np.ndarray) -> np.ndarray:
-        q, self.carry = self.values(obs, carry=self.carry)
+        q, self.carry, _ = self.values(obs, carry=self.carry)
         pi = egreedy_probabilities(q, self.actions, self.epsilon)
         return pi
-    
-    def start(self, x: np.ndarray):
-        self.carry = None
-        return super().start(x)
 
     # internal compiled version of the value function
     # TODO: carry the hidden state
     @partial(jax.jit, static_argnums=0)
     def _values(self, state: AgentState, x: jax.Array, carry: jax.Array = None): # type: ignore
         phi = self.phi(state.params, x, carry=carry)
-        return self.q(state.params, phi[0][:, -1]), phi[1][:, -1]
+        return self.q(state.params, phi[0][:, -1]), phi[1][:, -1], phi[2]
 
     def update(self):
         self.steps += 1
@@ -108,25 +100,17 @@ class DRQN(NNAgent):
 
         self.updates += 1
 
-        batch = self.buffer.sample(self.batch_size)
+        batch = self.buffer.sample_sequences(self.batch_size)
         weights = self.buffer.isr_weights(batch.trans_id)
         self.state, metrics = self._computeUpdate(self.state, batch, weights)
 
         metrics = jax.device_get(metrics)
 
         priorities = metrics['delta']
-        cur_loss = metrics['loss']
-        grads = metrics['grad']
-        leaves, _ = tree_flatten(grads)
-        grad_norm = jnp.sqrt(sum([jnp.sum(jnp.square(g)) for g in leaves]))
-        self.cum_loss += cur_loss
-        self.running_average = (1 - self.alpha) * self.running_average + self.alpha * cur_loss
-        self.running_average_grad = (1 - self.alpha) * self.running_average_grad + self.alpha * grad_norm
-        self.term = metrics['term']
         self.buffer.update_batch(batch, priorities=priorities)
-        self.non_zeros = (1 - self.alpha) * self.non_zeros + self.alpha * jnp.count_nonzero(metrics['r'])
-        # for k, v in metrics.items():
-        #     self.collector.collect(k, np.mean(v).item())
+
+        for k, v in metrics.items():
+            self.collector.collect(k, np.mean(v).item())
 
         if self.updates % self.target_refresh == 0:
             self.state.target_params = self.state.params   # deepcopy not needed here because optax.apply_updates produces a new pytree as params at each update, so params becomes unlinked from target_params
@@ -135,7 +119,7 @@ class DRQN(NNAgent):
     # -- Updates --
     # -------------
     @partial(jax.jit, static_argnums=0)
-    def _computeUpdate(self, state: AgentState, batch: Batch, weights: jax.Array):
+    def _computeUpdate(self, state: AgentState, batch: LaggedTimestep, weights: jax.Array):
         grad_fn = jax.grad(self._loss, has_aux=True)
         grad, metrics = grad_fn(state.params, state.target_params, batch, weights)
 
@@ -147,21 +131,23 @@ class DRQN(NNAgent):
             target_params=state.target_params,
             optim=optim,
         )
-        metrics['grad'] = grad
 
         return new_state, metrics
 
     # Loss is computed for the final action in the sequence
-    def _loss(self, params: hk.Params, target: hk.Params, batch: Batch, weights: jax.Array):
+    def _loss(self, params: hk.Params, target: hk.Params, batch: CarryBatch, weights: jax.Array):
         # Reshape the batch to have (N, T, ...)
         n_samples, *feature_dims = batch.x.shape
         n_samples = n_samples // self.sequence_length
         
         x = batch.x.reshape(n_samples, self.sequence_length, *feature_dims)
         xp = batch.xp.reshape(n_samples, self.sequence_length, *feature_dims)
+
+        carry = batch.carry.reshape(n_samples, self.sequence_length, -1)
+        initial_carry = carry[:, -1, ...]
         term = batch.terminal.reshape(n_samples, self.sequence_length)
-        phi = self.phi(params, x, reset=term)[0]
-        phi_p = self.phi(target, xp, reset=term)[0]
+        phi = self.phi(params, x, carry=initial_carry, reset=term)[0]
+        phi_p = self.phi(target, xp, carry=initial_carry, reset=term)[0]
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
 
@@ -180,9 +166,74 @@ class DRQN(NNAgent):
 
         chex.assert_equal_shape((weights, losses))
         loss = jnp.mean(weights * losses)
-        
-        metrics['loss'] = loss
-        metrics['term'] = term
-        metrics['r'] = r
 
         return loss, metrics
+
+    # ----------------------
+    # -- RLGlue interface --
+    # ----------------------
+    def start(self, x: np.ndarray): # type: ignore
+        self.carry = None
+        self.buffer.flush()
+        x = np.asarray(x)
+        x = self.normalize_state(x)
+        carry = self.values(x)[2]
+        pi = self.policy(x)
+        a = sample(pi, rng=self.rng)
+        self.buffer.add_step(Timestep(
+            x=x,
+            a=a,
+            r=None,
+            gamma=self.gamma,
+            terminal=False,
+            extra={'carry': carry}
+        ))
+
+        return a
+
+    def step(self, r: float, xp: np.ndarray | None, extra: Dict[str, Any]): # type: ignore
+        a = -1
+        carry = self.carry
+
+        # sample next action
+        if xp is not None:
+            xp = np.asarray(xp)
+            xp = self.normalize_state(xp)
+            pi = self.policy(xp)
+            a = sample(pi, rng=self.rng)
+
+        # see if the problem specified a discount term
+        gamma = extra.get('gamma', 1.0)
+
+        # possibly process the reward
+        if self.reward_clip > 0:
+            r = np.clip(r, -self.reward_clip, self.reward_clip)
+
+        self.buffer.add_step(Timestep(
+            x=xp,
+            a=a,
+            r=r,
+            gamma=self.gamma * gamma,
+            terminal=False,
+            extra={'carry': carry}
+        ))
+
+        self.update()
+        return a
+
+    def end(self, r: float, extra: Dict[str, Any]): # type: ignore
+        carry = self.carry
+        # possibly process the reward
+        if self.reward_clip > 0:
+            r = np.clip(r, -self.reward_clip, self.reward_clip)
+
+        self.buffer.add_step(Timestep(
+            x=np.zeros(self.observations),
+            a=-1,
+            r=r,
+            gamma=0,
+            terminal=True,
+            extra={'carry': carry}
+        ))
+
+        self.update()

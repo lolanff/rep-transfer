@@ -49,13 +49,16 @@ class GRU(hk.Module):
             reset = jnp.zeros((N, T), dtype=bool)
         if carry is None:
             carry = self.gru.initial_state(batch_size=N)
+            
+        # Shift reset
+        reset = jnp.hstack((jnp.zeros((N, 1), dtype=bool), reset[:, :-1]))
 
         # Vectorize the per-sequence unroll over the batch dimension.
         # x has shape [N, T, ...] and reset has shape [N, T].
         outputs_sequence, states_sequence = jax.vmap(self.process_sequence)(carry, x, reset)
 
         # Return both the GRU outputs and hidden states across the entire sequence.
-        return outputs_sequence, states_sequence
+        return outputs_sequence, states_sequence, self.gru.initial_state(batch_size=1)
 
 class TMazeGRUNetReLU(hk.Module):
     def __init__(self, hidden: int, name: str = ""):
@@ -86,14 +89,14 @@ class TMazeGRUNetReLU(hk.Module):
         
         h = self.flatten(x)
         
-        outputs_sequence, states_sequence = self.gru(h, reset, carry)
+        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry)
         
         outputs_sequence = jax.nn.relu(outputs_sequence)
         
         outputs_sequence = self.phi(outputs_sequence)
 
-        # Return both the GRU outputs and hidden states across the entire sequence.
-        return outputs_sequence, states_sequence
+        # Return both the GRU outputs and hidden states across the entire sequence along with initial hidden state
+        return outputs_sequence, states_sequence, initial_carry
 
 class MazeGRUNetReLU(hk.Module):
     def __init__(self, hidden: int, name: str = ""):
@@ -150,14 +153,14 @@ class MazeGRUNetReLU(hk.Module):
         
         h = self.flatten(h)
         
-        outputs_sequence, states_sequence = self.gru(h, reset, carry)
+        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry)
         
         outputs_sequence = jax.nn.relu(outputs_sequence)
         
         outputs_sequence = self.phi(outputs_sequence)
 
-        # Return both the GRU outputs and hidden states across the entire sequence.
-        return outputs_sequence, states_sequence
+        # Return both the GRU outputs and hidden states across the entire sequence along with initial hidden state
+        return outputs_sequence, states_sequence, initial_carry
 
 class NetworkBuilder:
     def __init__(self, input_shape: Tuple, params: Dict[str, Any], seed: int):

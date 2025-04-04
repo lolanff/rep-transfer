@@ -11,5 +11,5 @@ class TMaze(BaseProblem):
         self.env = Env(corridor_length=self.env_params.get('corridor_length', 10), 
                        seed=self.seed)
         self.actions = 4
-        self.observations = (1, 1, 3)
-        self.gamma = 0.99
+        self.observations = (2, 2, 3)
+        self.gamma = 0.95

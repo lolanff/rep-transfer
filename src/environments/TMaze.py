@@ -8,13 +8,13 @@ class TMaze(BaseEnvironment):
     def __init__(self, corridor_length=10, seed=np.random.randint(int(1e5))):
         # Disambiguity: corridor_length is excluding the junction.
         self.rng = np.random.RandomState(seed)
-        self.gamma = 0.5
+        self.gamma = 0.95
         self.corridor_length = corridor_length
         self.x = 0
         self.y = 0
         self.right_goal_reward = 4
-        self.wrong_goal_reward = 0
-        self.other_state_reward = 0
+        self.wrong_goal_reward = -1
+        self.other_state_reward = -0.1
         
     def generate_goal(self):
         # True goal is up, False goal is down
@@ -46,13 +46,15 @@ class TMaze(BaseEnvironment):
     
     def get_state(self):
         if self.is_at_junction():
-            return self.get_junction_state()
+            state = self.get_junction_state()
         elif self.is_at_goal():
-            return self.get_goal_state()
+            state = self.get_goal_state()
         elif self.is_at_sign():
-            return self.get_sign_state()
+            state = self.get_sign_state()
         else:
-            return self.get_corridor_state()
+            state = self.get_corridor_state()
+        
+        return np.tile(state, (2,2,1))
         
     def get_reward(self):
         if self.is_at_goal():

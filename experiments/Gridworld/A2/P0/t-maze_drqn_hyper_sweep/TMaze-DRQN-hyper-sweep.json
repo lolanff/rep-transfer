@@ -2,7 +2,7 @@
     "agent": "DRQN-ReLU-TMaze",
     "problem": "TMaze",
     "total_steps": 300000,
-    "episode_cutoff": 16,
+    "episode_cutoff": 1000,
     "metaParameters": {
         "experiment": {
             "load": false,
@@ -12,10 +12,10 @@
         "target_refresh": 64,
         "buffer_type": "rnn_uniform",
         "buffer_size": 10000,
-        "batch": 8,
+        "batch": 32,
         "n_step": 1,
-        "update_freq": 4,
-        "sequence_length": 16,
+        "update_freq": 1,
+        "sequence_length": 12,
         "normalizer": {
             "state": {
                 "coeff": 1.0
@@ -29,11 +29,11 @@
         },
         "representation": {
             "type": "MazeGRUNetReLU",
-            "hidden": [1, 2, 4, 8, 16],
+            "hidden": 32,
             "frozen": false
         },
         "environment": {
-            "corridor_length": 1
+            "corridor_length": 10
         }
     }
 }
