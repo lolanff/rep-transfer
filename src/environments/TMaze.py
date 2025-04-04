@@ -1,4 +1,8 @@
 # Implement T-maze from https://papers.nips.cc/paper/2001/hash/a38b16173474ba8b1a95bcbc30d3b8a5-Abstract.html
+# Note the following changes
+#   wrong_goal_reward is -1 instead of -0.1
+#   gamma is 0.95 instead of 0.98
+#   observation is repeated along HW for (2, 2) unlike the original of (1, 1)
 import numpy as np
 from rlglue.environment import BaseEnvironment
 import gymnasium as gym

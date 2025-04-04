@@ -1,5 +1,5 @@
 {
-    "agent": "DRQN-ReLU-scratch-A",
+    "agent": "DRQN-ReLU-scratch-0",
     "problem": "Gridworld",
     "total_steps": 100000,
     "episode_cutoff": 100,
