@@ -84,6 +84,7 @@ class NNAgent(BaseAgent):
 
         self.steps = 0
         self.updates = 0
+        self.is_successful = False
 
     # ------------------------
     # -- NN agent interface --
@@ -134,6 +135,8 @@ class NNAgent(BaseAgent):
     # -- RLGlue interface --
     # ----------------------
     def start(self, x: np.ndarray): # type: ignore
+        self.is_successful = False
+
         self.buffer.flush()
         x = np.asarray(x)
         x = self.normalize_state(x)
@@ -177,6 +180,8 @@ class NNAgent(BaseAgent):
         return a
 
     def end(self, r: float, extra: Dict[str, Any]): # type: ignore
+        self.is_successful = extra.get('success', False)
+
         # possibly process the reward
         if self.reward_clip > 0:
             r = np.clip(r, -self.reward_clip, self.reward_clip)

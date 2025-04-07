@@ -2,7 +2,7 @@
     "agent": "DRQN-ReLU-TMaze",
     "problem": "TMaze",
     "total_steps": 300000,
-    "episode_cutoff": 1000,
+    "episode_cutoff": 10000,
     "metaParameters": {
         "experiment": {
             "load": false,
@@ -15,7 +15,7 @@
         "batch": 32,
         "n_step": 1,
         "update_freq": 1,
-        "sequence_length": 16,
+        "sequence_length": 12,
         "normalizer": {
             "state": {
                 "coeff": 1.0

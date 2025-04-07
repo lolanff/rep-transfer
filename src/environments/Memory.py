@@ -9,7 +9,7 @@ class Memory(BaseEnvironment):
         env = gym.make("MiniGrid-MemoryS7-v0", render_mode="rgb_array", max_steps=max_steps)
         self.rng = np.random.RandomState(seed)
         self.env = ImgObsWrapper(env)
-        self.gamma = 0.99
+        self.gamma = 0.95
         self.binary = binary
     
     def start(self):
@@ -19,10 +19,10 @@ class Memory(BaseEnvironment):
     def step(self, action):
         observation, reward, terminated, truncated, _ = self.env.step(action)
         if self.binary:
-            return observation, float(reward != 0), terminated, truncated, self.get_info()
+            return observation, float(reward != 0), terminated, truncated, {**self.get_info(), "success": terminated and reward != 0}
         else:
-            reward = 1 if reward != 0 else (-1 if terminated else -0.1)
-            return observation, reward, terminated, truncated, self.get_info()
+            reward = 100 if reward != 0 else (-1 if terminated else -0.1)
+            return observation, reward, terminated, truncated, {**self.get_info(), "success": terminated and reward != 0}
         
     def get_info(self):
         return {"gamma": self.gamma}

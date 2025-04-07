@@ -61,13 +61,18 @@ class TMaze(BaseEnvironment):
         return np.tile(state, (2,2,1))
         
     def get_reward(self):
-        if self.is_at_goal():
-            if (self.goal_is_up and self.y == 1) or ((not self.goal_is_up) and self.y == -1):
-                return self.right_goal_reward
-            else:
-                return self.wrong_goal_reward
+        if self.is_successful():
+            return self.right_goal_reward
+        elif self.is_at_goal():
+            return self.wrong_goal_reward
         else:
             return self.other_state_reward
+        
+    def is_successful(self):
+        if self.is_at_goal():
+            if (self.goal_is_up and self.y == 1) or ((not self.goal_is_up) and self.y == -1):
+                return True
+        return False
         
     def get_state_value(self, x = None):
         if x is None: x = self.x
@@ -155,7 +160,10 @@ class TMaze(BaseEnvironment):
                 raise NotImplementedError("Illegal action")
         
     def get_info(self):
-        return {"gamma": self.gamma}
+        return {
+            "gamma": self.gamma,
+            "success": self.is_successful()
+            }
 
 class TMazeGymWrapper(gym.Env):
     def __init__(self, corridor_length=10):

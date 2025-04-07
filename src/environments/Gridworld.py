@@ -43,9 +43,9 @@ class GridHardXY(BaseEnvironment):
 
         self.current_state = x, y
         if x == self.goal_x and y == self.goal_y:
-            return self.generate_state([x, y]), 1.0, True, False, self.get_info()
+            return self.generate_state([x, y]), 1.0, True, False, {**self.get_info(), "success": True}
         else:
-            return self.generate_state([x, y]), 0.0, False, False, self.get_info()
+            return self.generate_state([x, y]), 0.0, False, False, {**self.get_info(), "success": False}
 
     def get_info(self):
         return {"gamma": self.gamma}

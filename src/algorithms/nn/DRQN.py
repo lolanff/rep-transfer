@@ -43,6 +43,7 @@ class DRQN(NNAgent):
         super().__init__(observations, actions, params, collector, seed)
         # set up the target network parameters
         self.target_refresh = params['target_refresh']
+        self.train_use_all_steps = params.get('train_use_all_steps', False)
         self.carry = None
         self.state = AgentState(
             params=self.state.params,
@@ -151,16 +152,28 @@ class DRQN(NNAgent):
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
 
-        # After the representation layer, we use all to train
-        qs = self.q(params, phi)
-        qs = qs.reshape(-1, qs.shape[-1])
-        qsp = self.q(target, phi_p)
-        qsp = qsp.reshape(-1, qsp.shape[-1])
+        if self.train_use_all_steps:
+            # After the representation layer, we use all
+            qs = self.q(params, phi)
+            qs = qs.reshape(-1, qs.shape[-1])
+            qsp = self.q(target, phi_p)
+            qsp = qsp.reshape(-1, qsp.shape[-1])
 
-        a = batch.a#.reshape(n_samples, self.sequence_length, 1)
-        r = batch.r#.reshape(n_samples, self.sequence_length, 1)
-        gamma = batch.gamma#.reshape(n_samples, self.sequence_length, 1)
-        
+            a = batch.a
+            r = batch.r
+            gamma = batch.gamma
+        else:
+            weights = weights.reshape(n_samples, self.sequence_length)[:, -1]
+
+            # After the representation layer, we just use the last
+            qs = self.q(params, phi[:, -1, ...])
+            qsp = self.q(target, phi_p[:, -1, ...])
+
+            a = batch.a.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
+            r = batch.r.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
+            gamma = batch.gamma.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
+            
+            
         batch_loss = jax.vmap(q_loss, in_axes=0)
         losses, metrics = batch_loss(qs, a, r, gamma, qsp)
 
@@ -173,6 +186,8 @@ class DRQN(NNAgent):
     # -- RLGlue interface --
     # ----------------------
     def start(self, x: np.ndarray): # type: ignore
+        self.is_successful = False
+
         self.carry = None
         self.buffer.flush()
         x = np.asarray(x)
@@ -222,6 +237,8 @@ class DRQN(NNAgent):
         return a
 
     def end(self, r: float, extra: Dict[str, Any]): # type: ignore
+        self.is_successful = extra['success']
+        
         carry = self.carry
         # possibly process the reward
         if self.reward_clip > 0:

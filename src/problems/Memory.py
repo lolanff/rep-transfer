@@ -13,4 +13,4 @@ class Memory(BaseProblem):
                        seed=self.seed)
         self.actions = 3
         self.observations = (7, 7, 3)
-        self.gamma = 0.99
+        self.gamma = 0.95

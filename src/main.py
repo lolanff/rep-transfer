@@ -75,7 +75,7 @@ for idx in indices:
             'steps': Identity(),
         },
         # by default, ignore keys that are not explicitly listed above
-        default=Ignore(),
+        default=Identity(),
     ))
     collector.setIdx(idx)
     run = exp.getRun(idx)
@@ -124,6 +124,7 @@ for idx in indices:
             collector.collect('return', glue.total_reward)
             collector.collect('episode', chk['episode'])
             collector.collect('steps', glue.num_steps)
+            collector.collect('success', agent.is_successful)
 
             # track how many episodes are completed (cutoff is counted as termination for this count)
             chk['episode'] += 1
