@@ -35,11 +35,18 @@ class RNNReplayBuffer(ReplayBuffer):
     ):
         super().__init__(max_size, lag, rng, idx_mapper=idx_mapper, storage=storage, sampler=sampler)
         self.sequence_length = sequence_length
-    # TODO: it is to be noted that it does not handle the discrepency in transition as new experience overwrite old ones in the circular buffer, that is, it does not recognize the boundary of the latest frame vs the next frame in order of idx who is the old one
-    # returns flattened sequences
+    
+    # Returns flattened sequences
     def sample_sequences(self, n: int) -> CarryBatch:
-        idxs = self._rng.integers(0, self._idx_mapper.size - self.sequence_length + 1, size=n, dtype=np.int64)
+        frontal_tid = self._lag_buffer._tid
+        mapper_size = self._idx_mapper.size
+
+        high = frontal_tid - self.sequence_length + 1
+        low = max(frontal_tid - mapper_size - self.sequence_length, 0)
+        idxs = self._rng.integers(low, high, size=n, dtype=np.int64)
+
         idxs = (idxs[:, None] + np.arange(self.sequence_length)).ravel()
+        idxs = idxs % mapper_size
         items = self._storage.meta.get_items_by_idx(idxs)
 
         x = self._storage._load_states(items.sidxs)

@@ -25,7 +25,7 @@ def test_RNNReplayBuffer():
             terminal=i==2 or i ==4,
             extra={'carry': np.full((1,3), i)}
         ))
-    batch = buffer.sample_sequences(1)
+    batch = buffer.sample_sequences(3)
     n_samples, *feature_dims = batch.x.shape
     n_samples = n_samples // sequence_length
     

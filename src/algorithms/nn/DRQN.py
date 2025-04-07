@@ -237,7 +237,7 @@ class DRQN(NNAgent):
         return a
 
     def end(self, r: float, extra: Dict[str, Any]): # type: ignore
-        self.is_successful = extra['success']
+        self.is_successful = extra.get('success', False)
         
         carry = self.carry
         # possibly process the reward
