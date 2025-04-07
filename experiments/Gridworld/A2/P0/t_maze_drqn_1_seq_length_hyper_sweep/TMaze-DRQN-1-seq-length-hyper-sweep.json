@@ -1,7 +1,7 @@
 {
     "agent": "DRQN-ReLU-TMaze",
     "problem": "TMaze",
-    "total_steps": 300000,
+    "total_steps": 3000000,
     "episode_cutoff": 1000,
     "metaParameters": {
         "experiment": {
@@ -11,7 +11,7 @@
         "epsilon": 0.1,
         "target_refresh": 64,
         "buffer_type": "rnn_uniform",
-        "buffer_size": 10000,
+        "buffer_size": 1000,
         "batch": 32,
         "n_step": 1,
         "update_freq": 1,
