@@ -1,8 +1,8 @@
 {
     "agent": "DQN-ReLU-Memory",
     "problem": "Memory",
-    "total_steps": 100000,
-    "episode_cutoff": 100,
+    "total_steps": 300000,
+    "episode_cutoff": 10000,
     "metaParameters": {
         "experiment": {
             "load": false,
@@ -21,7 +21,7 @@
         },
         "optimizer": {
             "name": "ADAM",
-            "alpha": [0.01, 0.001, 0.0001, 0.00001],
+            "alpha": [1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6],
             "beta1": 0.9,
             "beta2": 0.999
         },
