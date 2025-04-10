@@ -28,6 +28,7 @@ def test_MazeNetReLU():
 
     x = jnp.zeros((1, 15, 15, 3))
     phi = feature_function(params, x)
+    print(phi)
     assert phi.activations["conv"].shape == (1, 14, 14, 32)
     assert phi.activations["conv_1"].shape == (1, 8, 8, 16)
     assert phi.activations["flatten"].shape == (1, 1024)
@@ -67,3 +68,34 @@ def test_MazeNetFTA():
     # assert phi.activations["head"].shape == (1, 64)
     # assert phi.activations["head_1"].shape == (1, 64)
     assert q.shape == (1, 4)
+    
+def test_MazeGRUNetReLU():
+    builder = NetworkBuilder(
+        input_shape=(7, 7, 3),
+        params={
+            "hidden": 32,
+            "type": "MazeGRUNetReLU",
+        },
+        seed=0,
+    )
+    actions = 3
+    feature_function = builder.getRecurrentFeatureFunction()
+    
+    q = builder.addHead(
+            lambda: MultiLayerHead(actions=actions, name='q')
+        )
+    
+    params = builder.getParams()
+
+    x = jnp.zeros((1, 1, 7, 7, 3))
+    phi = feature_function(params, x)
+    print(phi)
+    # assert phi.activations["conv"].shape == (1, 14, 14, 32)
+    # assert phi.activations["conv_1"].shape == (1, 8, 8, 16)
+    # assert phi.activations["flatten"].shape == (1, 1024)
+    # assert phi.activations["phi"].shape == (1, 640)
+    # q = q_function(params, phi.out)
+    # # TODO: check the shape of the activations for the head, need to switch back to accumulatingSequence to do this
+    # # assert phi.activations["head"].shape == (1, 64)
+    # # assert phi.activations["head_1"].shape == (1, 64)
+    # assert q.shape == (1, 4)

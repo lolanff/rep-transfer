@@ -21,6 +21,9 @@ class CarryBatch(NamedTuple):
     trans_id: TransIds
     xp: np.ndarray
     carry: np.ndarray
+    carryp: np.ndarray
+    reset: np.ndarray
+    resetp: np.ndarray
     
 class RNNReplayBuffer(ReplayBuffer):
     def __init__(
@@ -48,17 +51,41 @@ class RNNReplayBuffer(ReplayBuffer):
         idxs = (idxs[:, None] + np.arange(self.sequence_length)).ravel()
         idxs = idxs % mapper_size
         items = self._storage.meta.get_items_by_idx(idxs)
+        
+        trans_ids = TransIds(np.array(items.trans_ids).reshape(n, self.sequence_length))
 
         x = self._storage._load_states(items.sidxs)
         xp = self._storage._load_states(items.n_sidxs)
+       
+        x = x.reshape(n, self.sequence_length, *x.shape[1:])
+        xp = xp.reshape(n, self.sequence_length, *xp.shape[1:])
+        
+        a = self._storage._a[idxs].reshape(n, self.sequence_length)
+        r = self._storage._r[idxs].reshape(n, self.sequence_length)
+        gamma = self._storage._gamma[idxs].reshape(n, self.sequence_length)
+        term = self._storage._term[idxs].reshape(n, self.sequence_length)
+
+        extras = self._storage._extras
+        carry, carryp, reset = zip(*((extras[i]['carry'], extras[i]['carryp'], extras[i]['reset']) for i in idxs))
+
+        carry = np.array(carry).reshape(n, self.sequence_length, -1)
+        carryp = np.array(carryp).reshape(n, self.sequence_length, -1)
+        reset = np.array(reset).reshape(n, self.sequence_length)
+        # Shift the reset for target, we don't have the corresponding reset for the last step but there are two cases:
+        # If last is terminal state, then it doesn't matter if resetting
+        # If last is not terminal state, then it shouldn't be resetting
+        resetp = np.hstack((reset[:, 1:], np.zeros((n, 1), dtype=bool)))
 
         return CarryBatch(
             x=x,
-            a=self._storage._a[idxs],
-            r=self._storage._r[idxs],
-            gamma=self._storage._gamma[idxs],
-            terminal=self._storage._term[idxs],
-            trans_id=items.trans_ids,
+            a=a,
+            r=r,
+            gamma=gamma,
+            terminal=term,
+            trans_id=trans_ids,
             xp=xp,
-            carry=np.array([self._storage._extras[i]['carry'] for i in idxs])
+            carry=carry,
+            carryp=carryp,
+            reset=reset,
+            resetp=resetp
         )

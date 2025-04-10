@@ -1,3 +1,0 @@
-,Environment,Algorithm,Hyperparameter,Value,AUC,Return
-0,memory_dqn_hyper_sweep,Memory-DQN-hyper-sweep,optimizer.alpha,0.001,2.9894559999999997,730.7184
-1,memory_drqn_hyper_sweep,Memory-DRQN-hyper-sweep,optimizer.alpha,0.001,2.84991,665.231

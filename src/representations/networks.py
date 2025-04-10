@@ -49,9 +49,6 @@ class GRU(hk.Module):
             reset = jnp.zeros((N, T), dtype=bool)
         if carry is None:
             carry = self.gru.initial_state(batch_size=N)
-            
-        # Shift reset
-        reset = jnp.hstack((jnp.zeros((N, 1), dtype=bool), reset[:, :-1]))
 
         # Vectorize the per-sequence unroll over the batch dimension.
         # x has shape [N, T, ...] and reset has shape [N, T].

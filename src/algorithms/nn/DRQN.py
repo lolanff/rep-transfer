@@ -9,7 +9,7 @@ from algorithms.nn.components.RNNReplayBuffer import CarryBatch
 from representations.networks import NetworkBuilder
 from utils.jax import huber_loss, mse_loss
 from utils.hk import MultiLayerHead
-from ReplayTables.interface import Timestep
+from ReplayTables.interface import Timestep, TransIds
 from utils.policies import egreedy_probabilities, sample
 
 import jax
@@ -44,6 +44,10 @@ class DRQN(NNAgent):
         # set up the target network parameters
         self.target_refresh = params['target_refresh']
         self.train_use_all_steps = params.get('train_use_all_steps', False)
+        self.burn_in_steps = params.get('burn_in_steps', 0)
+        self.trainable_steps = self.sequence_length - self.burn_in_steps
+        if self.trainable_steps < 1:
+            raise Exception("Sequence length must be longer than burn in steps")
         self.carry = None
         self.state = AgentState(
             params=self.state.params,
@@ -102,7 +106,8 @@ class DRQN(NNAgent):
         self.updates += 1
 
         batch = self.buffer.sample_sequences(self.batch_size)
-        weights = self.buffer.isr_weights(batch.trans_id)
+        weights_shape = batch.trans_id.shape
+        weights = self.buffer.isr_weights(TransIds(np.array(batch.trans_id).ravel())).reshape(weights_shape)
         self.state, metrics = self._computeUpdate(self.state, batch, weights)
 
         metrics = jax.device_get(metrics)
@@ -137,42 +142,63 @@ class DRQN(NNAgent):
 
     # Loss is computed for the final action in the sequence
     def _loss(self, params: hk.Params, target: hk.Params, batch: CarryBatch, weights: jax.Array):
-        # Reshape the batch to have (N, T, ...)
-        n_samples, *feature_dims = batch.x.shape
-        n_samples = n_samples // self.sequence_length
-        
-        x = batch.x.reshape(n_samples, self.sequence_length, *feature_dims)
-        xp = batch.xp.reshape(n_samples, self.sequence_length, *feature_dims)
+        x = batch.x
+        xp = batch.xp
+        carry = batch.carry
+        carryp = batch.carryp
+        initial_carry = carry[:, 0, ...]
+        initial_carryp = carryp[:, 0, ...]
+        term = batch.terminal
+        reset = batch.resetp
+        resetp = batch.resetp
+        a = batch.a
+        r = batch.r
+        gamma = batch.gamma
 
-        carry = batch.carry.reshape(n_samples, self.sequence_length, -1)
-        initial_carry = carry[:, -1, ...]
-        term = batch.terminal.reshape(n_samples, self.sequence_length)
-        phi = self.phi(params, x, carry=initial_carry, reset=term)[0]
-        phi_p = self.phi(target, xp, carry=initial_carry, reset=term)[0]
+        # Perform burn-in
+        if self.burn_in_steps > 0:
+            b_x, x = jnp.hsplit(x, self.burn_in_steps)
+            b_xp, xp = jnp.hsplit(xp, self.burn_in_steps)
+            _, term = jnp.hsplit(term, self.burn_in_steps)
+            b_reset, reset = jnp.hsplit(reset, self.burn_in_steps)
+            b_resetp, resetp = jnp.hsplit(resetp, self.burn_in_steps)
+            _, a = jnp.hsplit(a, self.burn_in_steps)
+            _, r = jnp.hsplit(r, self.burn_in_steps)
+            _, gamma = jnp.hsplit(gamma, self.burn_in_steps)
+            _, weights = jnp.hsplit(weights, self.burn_in_steps)
+            
+            initial_carry = jax.lax.stop_gradient(self.phi(params, b_x, carry=initial_carry, reset=b_reset)[1][:, -1, ...])
+            initial_carryp = jax.lax.stop_gradient(self.phi(target, b_xp, carry=initial_carryp, reset=b_resetp)[1][:, -1, ...])
+
+        phi = self.phi(params, x, carry=initial_carry, reset=reset)[0]
+        phi_p = self.phi(target, xp, carry=initial_carryp, reset=resetp)[0]
+
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
 
         if self.train_use_all_steps:
             # After the representation layer, we use all
             qs = self.q(params, phi)
-            qs = qs.reshape(-1, qs.shape[-1])
             qsp = self.q(target, phi_p)
-            qsp = qsp.reshape(-1, qsp.shape[-1])
 
-            a = batch.a
-            r = batch.r
-            gamma = batch.gamma
+            qs = qs.reshape(-1, qs.shape[-1])
+            qsp = qsp.reshape(-1, qsp.shape[-1])
+            
+            weights = weights.ravel()
+            a = a.ravel()
+            r = r.ravel()
+            gamma = gamma.ravel()
+
         else:
-            weights = weights.reshape(n_samples, self.sequence_length)[:, -1]
+            weights = weights[:, -1]
 
             # After the representation layer, we just use the last
             qs = self.q(params, phi[:, -1, ...])
             qsp = self.q(target, phi_p[:, -1, ...])
 
-            a = batch.a.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
-            r = batch.r.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
-            gamma = batch.gamma.reshape(n_samples, self.sequence_length, 1)[:, -1, ...]
-            
+            a = a[:, -1, ...]
+            r = r[:, -1, ...]
+            gamma = gamma[:, -1, ...]
             
         batch_loss = jax.vmap(q_loss, in_axes=0)
         losses, metrics = batch_loss(qs, a, r, gamma, qsp)
@@ -201,7 +227,11 @@ class DRQN(NNAgent):
             r=None,
             gamma=self.gamma,
             terminal=False,
-            extra={'carry': carry}
+            extra={
+                'carry': carry,
+                'carryp': self.carry,
+                'reset': True
+                }
         ))
 
         return a
@@ -230,7 +260,11 @@ class DRQN(NNAgent):
             r=r,
             gamma=self.gamma * gamma,
             terminal=False,
-            extra={'carry': carry}
+            extra={
+                'carry': carry,
+                'carryp': self.carry,
+                'reset': False
+                }
         ))
 
         self.update()
@@ -250,7 +284,11 @@ class DRQN(NNAgent):
             r=r,
             gamma=0,
             terminal=True,
-            extra={'carry': carry}
+            extra={
+                'carry': carry,
+                'carryp': self.carry,
+                'reset': False
+                }
         ))
 
         self.update()
