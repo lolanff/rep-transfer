@@ -23,7 +23,6 @@ class CarryBatch(NamedTuple):
     carry: np.ndarray
     carryp: np.ndarray
     reset: np.ndarray
-    resetp: np.ndarray
     
 class RNNReplayBuffer(ReplayBuffer):
     def __init__(
@@ -71,10 +70,6 @@ class RNNReplayBuffer(ReplayBuffer):
         carry = np.array(carry).reshape(n, self.sequence_length, -1)
         carryp = np.array(carryp).reshape(n, self.sequence_length, -1)
         reset = np.array(reset).reshape(n, self.sequence_length)
-        # Shift the reset for target, we don't have the corresponding reset for the last step but there are two cases:
-        # If last is terminal state, then it doesn't matter if resetting
-        # If last is not terminal state, then it shouldn't be resetting
-        resetp = np.hstack((reset[:, 1:], np.zeros((n, 1), dtype=bool)))
 
         return CarryBatch(
             x=x,
@@ -86,6 +81,5 @@ class RNNReplayBuffer(ReplayBuffer):
             xp=xp,
             carry=carry,
             carryp=carryp,
-            reset=reset,
-            resetp=resetp
+            reset=reset
         )

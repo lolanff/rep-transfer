@@ -147,8 +147,7 @@ class DRQN(NNAgent):
         carry = batch.carry
         carryp = batch.carryp
         term = batch.terminal
-        reset = batch.resetp
-        resetp = batch.resetp
+        reset = batch.reset
         a = batch.a
         r = batch.r
         gamma = batch.gamma
@@ -159,7 +158,6 @@ class DRQN(NNAgent):
             b_xp, xp = jnp.hsplit(xp, [self.burn_in_steps])
             _, term = jnp.hsplit(term, [self.burn_in_steps])
             b_reset, reset = jnp.hsplit(reset, [self.burn_in_steps])
-            b_resetp, resetp = jnp.hsplit(resetp, [self.burn_in_steps])
             b_carry, carry = jnp.hsplit(carry, [self.burn_in_steps])
             b_carryp, carryp = jnp.hsplit(carryp, [self.burn_in_steps])
             _, a = jnp.hsplit(a, [self.burn_in_steps])
@@ -168,10 +166,10 @@ class DRQN(NNAgent):
             _, weights = jnp.hsplit(weights, [self.burn_in_steps])
             
             carry = carry.at[:, 0].set(jax.lax.stop_gradient(self.phi(params, b_x, carry=b_carry, reset=b_reset)[1][:, -1, ...]))
-            carryp = carryp.at[:, 0].set(jax.lax.stop_gradient(self.phi(target, b_xp, carry=b_carryp, reset=b_resetp)[1][:, -1, ...]))
+            carryp = carryp.at[:, 0].set(jax.lax.stop_gradient(self.phi(target, b_xp, carry=b_carryp, reset=b_reset)[1][:, -1, ...]))
 
         phi = self.phi(params, x, carry=carry, reset=reset)[0]
-        phi_p = self.phi(target, xp, carry=carryp, reset=resetp)[0]
+        phi_p = self.phi(target, xp, carry=carryp, reset=reset)[0]
 
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
