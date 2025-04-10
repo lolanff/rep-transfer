@@ -18,16 +18,16 @@ class GRU(hk.Module):
         self.gru = hk.GRU(self.hidden, name='gru_inner')
         
     def gru_step(self, prev_state, inputs):
-        frame_feat, reset_flag = inputs
+        frame_feat, reset_flag, carry = inputs
         # Reset state if flag is True.
-        prev_state = jax.lax.select(reset_flag, self.gru.initial_state(batch_size=1), prev_state)
+        prev_state = jax.lax.select(reset_flag, carry[None, :], prev_state)
         # GRU expects inputs with a batch dimension.
         output, next_state = self.gru(frame_feat[None, :], prev_state)
         # Remove the extra batch dimension and return both output and next_state.
         return next_state, (output[0], next_state[0])
 
-    def process_sequence(self, carry, features_seq, reset_seq):
-        final_state, (outputs_seq, state_seq) = hk.scan(self.gru_step, carry[None, :], (features_seq, reset_seq))
+    def process_sequence(self, features_seq, reset_seq, carry_seq):
+        final_state, (outputs_seq, state_seq) = hk.scan(self.gru_step, carry_seq[:1, :], (features_seq, reset_seq, carry_seq))
         return outputs_seq, state_seq
     
     def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
@@ -43,16 +43,19 @@ class GRU(hk.Module):
           states_sequence: The hidden states sequence.
         """
         
-        N, T = x.shape[0], x.shape[1]
-        
+        N, T, *_ = x.shape
+
         if reset is None:
             reset = jnp.zeros((N, T), dtype=bool)
+
         if carry is None:
-            carry = self.gru.initial_state(batch_size=N)
+            carry = jnp.repeat(self.gru.initial_state(batch_size=N)[:, None, :], T, axis=1)
+        elif len(carry.shape) < 3:
+            carry = carry[:, None, :]
 
         # Vectorize the per-sequence unroll over the batch dimension.
         # x has shape [N, T, ...] and reset has shape [N, T].
-        outputs_sequence, states_sequence = jax.vmap(self.process_sequence)(carry, x, reset)
+        outputs_sequence, states_sequence = jax.vmap(self.process_sequence)(x, reset, carry)
 
         # Return both the GRU outputs and hidden states across the entire sequence.
         return outputs_sequence, states_sequence, self.gru.initial_state(batch_size=1)

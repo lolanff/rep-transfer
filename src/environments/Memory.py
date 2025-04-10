@@ -21,7 +21,7 @@ class Memory(BaseEnvironment):
         if self.binary:
             return observation, float(reward != 0), terminated, truncated, {**self.get_info(), "success": terminated and reward != 0}
         else:
-            reward = 100 if reward != 0 else (-1 if terminated else -0.1)
+            reward = 1 if reward != 0 else (-1 if terminated else -0.1)
             return observation, reward, terminated, truncated, {**self.get_info(), "success": terminated and reward != 0}
         
     def get_info(self):

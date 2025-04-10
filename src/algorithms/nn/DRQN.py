@@ -42,9 +42,9 @@ class DRQN(NNAgent):
     def __init__(self, observations: Tuple, actions: int, params: Dict, collector: Collector, seed: int):
         super().__init__(observations, actions, params, collector, seed)
         # set up the target network parameters
-        self.target_refresh = params['target_refresh']
+        self.target_refresh = int(params['target_refresh'])
         self.train_use_all_steps = params.get('train_use_all_steps', False)
-        self.burn_in_steps = params.get('burn_in_steps', 0)
+        self.burn_in_steps = int(params.get('burn_in_steps', 0))
         self.trainable_steps = self.sequence_length - self.burn_in_steps
         if self.trainable_steps < 1:
             raise Exception("Sequence length must be longer than burn in steps")
@@ -146,8 +146,6 @@ class DRQN(NNAgent):
         xp = batch.xp
         carry = batch.carry
         carryp = batch.carryp
-        initial_carry = carry[:, 0, ...]
-        initial_carryp = carryp[:, 0, ...]
         term = batch.terminal
         reset = batch.resetp
         resetp = batch.resetp
@@ -157,21 +155,23 @@ class DRQN(NNAgent):
 
         # Perform burn-in
         if self.burn_in_steps > 0:
-            b_x, x = jnp.hsplit(x, self.burn_in_steps)
-            b_xp, xp = jnp.hsplit(xp, self.burn_in_steps)
-            _, term = jnp.hsplit(term, self.burn_in_steps)
-            b_reset, reset = jnp.hsplit(reset, self.burn_in_steps)
-            b_resetp, resetp = jnp.hsplit(resetp, self.burn_in_steps)
-            _, a = jnp.hsplit(a, self.burn_in_steps)
-            _, r = jnp.hsplit(r, self.burn_in_steps)
-            _, gamma = jnp.hsplit(gamma, self.burn_in_steps)
-            _, weights = jnp.hsplit(weights, self.burn_in_steps)
+            b_x, x = jnp.hsplit(x, [self.burn_in_steps])
+            b_xp, xp = jnp.hsplit(xp, [self.burn_in_steps])
+            _, term = jnp.hsplit(term, [self.burn_in_steps])
+            b_reset, reset = jnp.hsplit(reset, [self.burn_in_steps])
+            b_resetp, resetp = jnp.hsplit(resetp, [self.burn_in_steps])
+            b_carry, carry = jnp.hsplit(carry, [self.burn_in_steps])
+            b_carryp, carryp = jnp.hsplit(carryp, [self.burn_in_steps])
+            _, a = jnp.hsplit(a, [self.burn_in_steps])
+            _, r = jnp.hsplit(r, [self.burn_in_steps])
+            _, gamma = jnp.hsplit(gamma, [self.burn_in_steps])
+            _, weights = jnp.hsplit(weights, [self.burn_in_steps])
             
-            initial_carry = jax.lax.stop_gradient(self.phi(params, b_x, carry=initial_carry, reset=b_reset)[1][:, -1, ...])
-            initial_carryp = jax.lax.stop_gradient(self.phi(target, b_xp, carry=initial_carryp, reset=b_resetp)[1][:, -1, ...])
+            carry = carry.at[:, 0].set(jax.lax.stop_gradient(self.phi(params, b_x, carry=b_carry, reset=b_reset)[1][:, -1, ...]))
+            carryp = carryp.at[:, 0].set(jax.lax.stop_gradient(self.phi(target, b_xp, carry=b_carryp, reset=b_resetp)[1][:, -1, ...]))
 
-        phi = self.phi(params, x, carry=initial_carry, reset=reset)[0]
-        phi_p = self.phi(target, xp, carry=initial_carryp, reset=resetp)[0]
+        phi = self.phi(params, x, carry=carry, reset=reset)[0]
+        phi_p = self.phi(target, xp, carry=carryp, reset=resetp)[0]
 
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
