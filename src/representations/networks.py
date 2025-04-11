@@ -105,25 +105,10 @@ class MazeGRUNetReLU(hk.Module):
         w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
         b_conv_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
 
-        self.conv1 = hk.Conv3D(
-            output_channels=32,
-            kernel_shape=(1, 4, 4),
-            stride=1,
-            padding=[(0, 0), (1, 1), (1, 1)],
-            w_init=w_conv_init,
-            b_init=b_conv_init,
-            name="conv_1"
-        )
+        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_init, name='conv_1')
 
-        self.conv2 = hk.Conv3D(
-            output_channels=16,
-            kernel_shape=(1, 4, 4),
-            stride=(1, 2, 2),
-            padding=[(0, 0), (2, 2), (2, 2)],
-            w_init=w_conv_init,
-            b_init=b_conv_init,
-            name="conv_2"
-        )
+        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_init, name='conv_2')
+
         self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
 
         self.gru = GRU(self.hidden, name='gru')
@@ -145,11 +130,19 @@ class MazeGRUNetReLU(hk.Module):
         # Add temporal dimension if given a single slice
         if (len(x.shape) < 5):
             x = x[:, None]
+            
+        N, T, *feat = x.shape
+        
+        x = jnp.reshape(x, (N * T, *feat))
 
         h = self.conv1(x)
         h = jax.nn.relu(h)
         h = self.conv2(h)
         h = jax.nn.relu(h)
+        
+        _, *feat = h.shape
+        
+        h = jnp.reshape(h, (N, T, *feat))
         
         h = self.flatten(h)
         
