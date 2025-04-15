@@ -12,10 +12,17 @@ from utils.functions import fta
 ModuleBuilder = Callable[[], Callable[[jax.Array | np.ndarray], jax.Array]]
 
 class GRU(hk.Module):
-    def __init__(self, hidden: int, name: str = ""):
+    def __init__(self, hidden: int, learn_initial_h=True, name: str = ""):
         super().__init__(name=name)
         self.hidden = hidden
         self.gru = hk.GRU(self.hidden, name='gru_inner')
+        self.learn_initial_h = learn_initial_h
+        
+    def initial_state(self, batch=1, length=1):
+        init_h = hk.get_parameter("initial_h", shape=(self.hidden,), init=hk.initializers.VarianceScaling())
+        init_h = jnp.repeat(init_h[None, :], batch, axis=0)
+        init_h = jnp.repeat(init_h[:, None, :], length, axis=1)
+        return init_h
         
     def gru_step(self, prev_state, inputs):
         frame_feat, reset_flag, carry = inputs
@@ -30,7 +37,7 @@ class GRU(hk.Module):
         final_state, (outputs_seq, state_seq) = hk.scan(self.gru_step, carry_seq[:1, :], (features_seq, reset_seq, carry_seq))
         return outputs_seq, state_seq
     
-    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         """
         Args:
           x: Input tensor with shape [N, T, ...]
@@ -49,29 +56,37 @@ class GRU(hk.Module):
             reset = jnp.zeros((N, T), dtype=bool)
 
         if carry is None:
-            carry = jnp.repeat(self.gru.initial_state(batch_size=N)[:, None, :], T, axis=1)
+            if self.learn_initial_h:
+                carry = self.initial_state(N, T)
+            else:
+                carry = jnp.repeat(self.gru.initial_state(batch_size=N)[:, None, :], T, axis=1)
         elif len(carry.shape) < 3:
             carry = carry[:, None, :]
+        
+        # Replace entries in carry where reset is true with the initial state
+        if self.learn_initial_h and not is_target:
+            init_state = self.initial_state(N, T)
+            carry = jnp.where(reset[..., None], init_state, carry)
 
         # Vectorize the per-sequence unroll over the batch dimension.
         # x has shape [N, T, ...] and reset has shape [N, T].
         outputs_sequence, states_sequence = jax.vmap(self.process_sequence)(x, reset, carry)
 
         # Return both the GRU outputs and hidden states across the entire sequence.
-        return outputs_sequence, states_sequence, self.gru.initial_state(batch_size=1)
+        return outputs_sequence, states_sequence, self.initial_state(1, 1)[:, 0, ...] if self.learn_initial_h else self.gru.initial_state(batch_size=1)
 
 class TMazeGRUNetReLU(hk.Module):
-    def __init__(self, hidden: int, name: str = ""):
+    def __init__(self, hidden: int, learn_initial_h=True, name: str = ""):
         super().__init__(name=name)
         self.hidden = hidden
 
         self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
 
-        self.gru = GRU(self.hidden, name='gru')
+        self.gru = GRU(self.hidden, learn_initial_h=learn_initial_h, name='gru')
         
         self.phi = hk.Flatten(preserve_dims=2, name='phi')
 
-    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray]:
         """
         Args:
           x: Input tensor with shape [N, T, ...]
@@ -89,7 +104,7 @@ class TMazeGRUNetReLU(hk.Module):
         
         h = self.flatten(x)
         
-        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry)
+        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry, is_target=is_target)
         
         outputs_sequence = jax.nn.relu(outputs_sequence)
         
@@ -99,7 +114,7 @@ class TMazeGRUNetReLU(hk.Module):
         return outputs_sequence, states_sequence, initial_carry
 
 class MazeGRUNetReLU(hk.Module):
-    def __init__(self, hidden: int, name: str = ""):
+    def __init__(self, hidden: int, learn_initial_h=True, name: str = ""):
         super().__init__(name=name)
         self.hidden = hidden
         w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
@@ -111,11 +126,11 @@ class MazeGRUNetReLU(hk.Module):
 
         self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
 
-        self.gru = GRU(self.hidden, name='gru')
+        self.gru = GRU(self.hidden, learn_initial_h=learn_initial_h, name='gru')
         
         self.phi = hk.Flatten(preserve_dims=2, name='phi')
 
-    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         """
         Args:
           x: Input tensor with shape [N, T, ...]
@@ -146,9 +161,73 @@ class MazeGRUNetReLU(hk.Module):
         
         h = self.flatten(h)
         
-        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry)
+        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry, is_target=is_target)
         
         outputs_sequence = jax.nn.relu(outputs_sequence)
+        
+        outputs_sequence = self.phi(outputs_sequence)
+
+        # Return both the GRU outputs and hidden states across the entire sequence along with initial hidden state
+        return outputs_sequence, states_sequence, initial_carry
+    
+class MazeGRUNetFTA(hk.Module):
+    def __init__(self, hidden: int, eta, learn_initial_h=True, name: str = ""):
+        super().__init__(name=name)
+        self.hidden = hidden
+        self.eta = eta
+        w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
+        b_conv_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
+
+        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_init, name='conv_1')
+
+        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_init, name='conv_2')
+
+        self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
+
+        self.gru = GRU(self.hidden, learn_initial_h=learn_initial_h, name='gru')
+        
+        self.phi = hk.Flatten(preserve_dims=2, name='phi')
+
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+        """
+        Args:
+          x: Input tensor with shape [N, T, ...]
+          reset: Optional binary flag sequence with shape [N, T] indicating when to reset the GRU state.
+                 For example, at episode boundaries.
+          carry: The initial hidden state for RNN.
+        
+        Returns:
+          outputs_sequence: Representation vectors sequence.
+          states_sequence: The hidden states sequence.
+        """
+        # Add temporal dimension if given a single slice
+        if (len(x.shape) < 5):
+            x = x[:, None]
+            
+        N, T, *feat = x.shape
+        
+        x = jnp.reshape(x, (N * T, *feat))
+
+        h = self.conv1(x)
+        h = jax.nn.relu(h)
+        h = self.conv2(h)
+        h = jax.nn.relu(h)
+        
+        _, *feat = h.shape
+        
+        h = jnp.reshape(h, (N, T, *feat))
+        
+        h = self.flatten(h)
+        
+        outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry, is_target=is_target)
+        
+        N, T, _ = outputs_sequence.shape
+        
+        outputs_sequence = jnp.reshape(outputs_sequence, (N * T, -1))
+        
+        outputs_sequence = fta(outputs_sequence, eta=self.eta, tiles=20, lower_bound=-2, upper_bound=2)
+        
+        outputs_sequence = jnp.reshape(outputs_sequence, (N, T, -1))
         
         outputs_sequence = self.phi(outputs_sequence)
 
@@ -180,8 +259,8 @@ class NetworkBuilder:
         return _inner
 
     def getRecurrentFeatureFunction(self):
-        def _inner(params: Any, x: jax.Array | np.ndarray, reset: jax.Array | np.ndarray = None, carry: jax.Array | np.ndarray = None):
-            return self._feat_net.apply(params['phi'], x, reset=reset, carry=carry)
+        def _inner(params: Any, x: jax.Array | np.ndarray, reset: jax.Array | np.ndarray = None, carry: jax.Array | np.ndarray = None, is_target = False):
+            return self._feat_net.apply(params['phi'], x, reset=reset, carry=carry, is_target=is_target)
 
         return _inner
 
@@ -309,11 +388,15 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
             ]
            
         elif name == 'TMazeGRUNetReLU':
-            net = TMazeGRUNetReLU(hidden=hidden, name='TMazeGRUNetReLU')
+            net = TMazeGRUNetReLU(hidden=hidden, learn_initial_h=params.get('learn_initial_h', True), name='TMazeGRUNetReLU')
             return net(x, *args, **kwargs)
          
         elif name == 'MazeGRUNetReLU':
-            net = MazeGRUNetReLU(hidden=hidden, name='MazeGRUNetReLU')
+            net = MazeGRUNetReLU(hidden=hidden, learn_initial_h=params.get('learn_initial_h', True), name='MazeGRUNetReLU')
+            return net(x, *args, **kwargs)
+        
+        elif name == 'MazeGRUNetFTA':
+            net = MazeGRUNetFTA(hidden=hidden, eta=params['eta'], learn_initial_h=params.get('learn_initial_h', True), name='MazeGRUNetReLU')
             return net(x, *args, **kwargs)
         
         elif name == 'Linear':

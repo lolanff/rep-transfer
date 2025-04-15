@@ -43,7 +43,7 @@ class DRQN(NNAgent):
         super().__init__(observations, actions, params, collector, seed)
         # set up the target network parameters
         self.target_refresh = int(params['target_refresh'])
-        self.train_use_all_steps = params.get('train_use_all_steps', False)
+        self.train_use_all_steps = params.get('train_use_all_steps', True)
         self.burn_in_steps = int(params.get('burn_in_steps', 0))
         self.trainable_steps = self.sequence_length - self.burn_in_steps
         if self.trainable_steps < 1:
@@ -165,11 +165,11 @@ class DRQN(NNAgent):
             _, gamma = jnp.hsplit(gamma, [self.burn_in_steps])
             _, weights = jnp.hsplit(weights, [self.burn_in_steps])
             
-            carry = carry.at[:, 0].set(jax.lax.stop_gradient(self.phi(params, b_x, carry=b_carry, reset=b_reset)[1][:, -1, ...]))
-            carryp = carryp.at[:, 0].set(jax.lax.stop_gradient(self.phi(target, b_xp, carry=b_carryp, reset=b_reset)[1][:, -1, ...]))
+            carry = carry.at[:, 0].set(jax.lax.stop_gradient(self.phi(params, b_x, carry=b_carry, reset=b_reset, is_target=False)[1][:, -1, ...]))
+            carryp = carryp.at[:, 0].set(jax.lax.stop_gradient(self.phi(target, b_xp, carry=b_carryp, reset=b_reset, is_target=True)[1][:, -1, ...]))
 
-        phi = self.phi(params, x, carry=carry, reset=reset)[0]
-        phi_p = self.phi(target, xp, carry=carryp, reset=reset)[0]
+        phi = self.phi(params, x, carry=carry, reset=reset, is_target=False)[0]
+        phi_p = self.phi(target, xp, carry=carryp, reset=reset, is_target=True)[0]
 
         if self.rep_params.get("frozen"):
             phi = jax.lax.stop_gradient(phi)
