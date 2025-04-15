@@ -13,7 +13,7 @@
         "target_refresh": 64,
         "buffer_type": "rnn_uniform",
         "buffer_size": 10000,
-        "batch": 8,
+        "batch": 2,
         "n_step": 1,
         "update_freq": 1,
         "sequence_length": 32,

@@ -1,5 +1,5 @@
 {
-    "agent": "DRQN-ReLU-0",
+    "agent": "DRQN-ReLU-FTA-0",
     "problem": "Gridworld",
     "total_steps": 300000,
     "episode_cutoff": 100,
@@ -13,7 +13,7 @@
         "target_refresh": 64,
         "buffer_type": "rnn_uniform",
         "buffer_size": 10000,
-        "batch": 8,
+        "batch": 1,
         "n_step": 1,
         "update_freq": 1,
         "sequence_length": 32,
@@ -30,9 +30,10 @@
             "beta2": 0.999
         },
         "representation": {
-            "type": "MazeGRUNetReLU",
+            "type": "MazeGRUNetFTA",
             "hidden": 32,
-            "frozen": false
+            "frozen": false,
+            "eta": 0.2
         },
         "environment": {
             "goal_id": "0"

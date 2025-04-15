@@ -1,0 +1,77 @@
+{
+    "agent": "DRQN-ReLU",
+    "problem": "Gridworld",
+    "total_steps": 100000,
+    "episode_cutoff": 100,
+    "early_saving": -1,
+    "metaParameters": {
+        "experiment": {
+            "load": false,
+            "seed_offset": 0
+        },
+        "epsilon": 0.1,
+        "target_refresh": 64,
+        "buffer_type": "rnn_uniform",
+        "buffer_size": 10000,
+        "batch": 32,
+        "n_step": 1,
+        "update_freq": 1,
+        "sequence_length": 32,
+        "train_use_all_steps": true,
+        "normalizer": {
+            "state": {
+                "coeff": 255.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": [0.001, 0.0003, 0.0001, 0.00003, 0.00001],
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeGRUNetReLU",
+            "hidden": 32,
+            "frozen": false
+        },
+        "environment": {
+            "goal_id": [
+                "0",
+                "5",
+                "10",
+                "15",
+                "20",
+                "25",
+                "30",
+                "35",
+                "40",
+                "45",
+                "50",
+                "55",
+                "60",
+                "65",
+                "70",
+                "75",
+                "80",
+                "85",
+                "90",
+                "95",
+                "100",
+                "105",
+                "110",
+                "115",
+                "120",
+                "125",
+                "130",
+                "135",
+                "140",
+                "145",
+                "150",
+                "155",
+                "160",
+                "165",
+                "170"
+            ]
+        }
+    }
+}
