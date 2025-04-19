@@ -50,11 +50,11 @@ if __name__ == "__main__":
     del results
     assert df is not None
     
-    columns = ["Environment", "Algorithm", "Hyperparameter", "Value", "AUC", "Return"]
+    columns = ["Environment", "Algorithm", "Hyperparameter", "Value", "AUC", "Return", "Successes"]
     collector_df = pd.DataFrame(columns=columns)
     
-    def add_entry(df, env, alg, hyper, val, auc, ret):
-        new_entry = pd.DataFrame([[env, alg, hyper, val, auc, ret]], columns=df.columns)
+    def add_entry(df, env, alg, hyper, val, auc, ret, suc):
+        new_entry = pd.DataFrame([[env, alg, hyper, val, auc, ret, suc]], columns=df.columns)
         print(new_entry)
         return pd.concat([df, new_entry], ignore_index=True)
 
@@ -83,6 +83,10 @@ if __name__ == "__main__":
             best_alpha = max(alpha2auc, key=alpha2auc.get)
             best_auc = alpha2auc[best_alpha]
             best_return = alpha2return[best_alpha]
-            collector_df = add_entry(collector_df, env, alg, "optimizer.alpha", best_alpha, best_auc, best_return)
+
+            for seed, seed_df in alg_df[df['optimizer.alpha']==best_alpha].groupby('seed'):
+                seed_df = seed_df[seed_df['frame'] > total_steps * 0.9]
+                successes = np.nanmean(seed_df['success'].values)
+                collector_df = add_entry(collector_df, env, alg, "optimizer.alpha", best_alpha, best_auc, best_return, successes)
             
     collector_df.to_csv(f"{path}/hyperparameter_collector.csv")

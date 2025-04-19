@@ -2,7 +2,6 @@ import Box2D     # we need to import this first because cedar is stupid
 import os
 import sys
 
-from environments.TMaze import TMaze
 sys.path.append(os.getcwd())
 
 import time
@@ -16,10 +15,12 @@ from experiment import ExperimentModel
 from utils.checkpoint import Checkpoint
 from utils.preempt import TimeoutHandler
 from problems.registry import getProblem
-from PyExpUtils.results.sqlite import saveCollector
-from PyExpUtils.collection.Collector import Collector
-from PyExpUtils.collection.Sampler import Ignore, MovingAverage, Subsample, Identity
-from PyExpUtils.collection.utils import Pipe
+from ml_instrumentation.Collector import Collector
+from ml_instrumentation.Sampler import Identity, Ignore, MovingAverage, Subsample
+from ml_instrumentation.utils import Pipe
+from ml_instrumentation.metadata import attach_metadata
+from PyExpUtils.results.tools import getParamsAsDict
+import jax
 
 # ------------------
 # -- Command Args --
@@ -38,7 +39,7 @@ args = parser.parse_args()
 # ---------------------------
 # -- Library Configuration --
 # ---------------------------
-import jax
+
 device = 'gpu' if args.gpu else 'cpu'
 jax.config.update('jax_platform_name', device)
 
@@ -77,7 +78,7 @@ for idx in indices:
         # by default, ignore keys that are not explicitly listed above
         default=Identity(),
     ))
-    collector.setIdx(idx)
+    collector.set_experiment_id(idx)
     run = exp.getRun(idx)
 
     # set random seeds. add an offset for transfer tasks
@@ -151,7 +152,13 @@ for idx in indices:
     # ------------
     # -- Saving --
     # ------------
-    saveCollector(exp, collector, base=args.save_path)
+    context = exp.buildSaveContext(idx, base=args.save_path)
+    save_path = context.resolve('results.db')
+    meta = getParamsAsDict(exp, idx)
+    meta |= {'seed': exp.getRun(idx)}
+    attach_metadata(save_path, idx, meta)
+    collector.merge(context.resolve('results.db'))
+    collector.close()
     if problem.exp_params.get("save", {}): 
         chk.save()
     else: 

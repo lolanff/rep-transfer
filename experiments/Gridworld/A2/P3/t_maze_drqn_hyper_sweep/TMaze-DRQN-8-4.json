@@ -1,0 +1,40 @@
+{
+    "agent": "DRQN-ReLU-TMaze-8-4",
+    "problem": "TMaze",
+    "total_steps": 300000,
+    "episode_cutoff": 100,
+    "metaParameters": {
+        "experiment": {
+            "load": false,
+            "seed_offset": 1000
+        },
+        "epsilon": 0.1,
+        "target_refresh": 64,
+        "buffer_type": "rnn_uniform",
+        "buffer_size": 10000,
+        "batch": 8,
+        "n_step": 1,
+        "update_freq": 1,
+        "sequence_length": 4,
+        "train_use_all_steps": false,
+        "normalizer": {
+            "state": {
+                "coeff": 1.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": 0.001,
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeGRUNetReLU",
+            "hidden": 32,
+            "frozen": false
+        },
+        "environment": {
+            "corridor_length": 10
+        }
+    }
+}
