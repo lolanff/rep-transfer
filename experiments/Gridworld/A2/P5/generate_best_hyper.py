@@ -24,7 +24,7 @@ setDefaultConference('jmlr')
 if __name__ == "__main__":
     path, should_save, save_type = parseCmdLineArgs()
     
-    old_path = f"{path}/../P2"
+    old_path = f"{path}/../P4"
     
     df = pd.read_csv(f"{old_path}/hyperparameter_collector.csv")
 
