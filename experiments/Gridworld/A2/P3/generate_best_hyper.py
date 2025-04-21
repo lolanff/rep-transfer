@@ -34,6 +34,7 @@ if __name__ == "__main__":
         val = row['Value']
 
         json_input_path = f"{old_path}/{env}/{alg}.json"
+        env = env.replace("-hyper-sweep", "")
         alg = alg.replace("-hyper-sweep", "")
         json_output_path = f"{path}/{env}/{alg}.json"
 
