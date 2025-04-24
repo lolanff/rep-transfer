@@ -15,13 +15,18 @@ class GRU(hk.Module):
     def __init__(self, hidden: int, learn_initial_h=True, name: str = ""):
         super().__init__(name=name)
         self.hidden = hidden
-        self.gru = hk.GRU(self.hidden, name='gru_inner')
+        xavier = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
+        self.gru = hk.GRU(self.hidden, name='gru_inner', w_h_init=xavier, w_i_init=xavier)
         self.learn_initial_h = learn_initial_h
         
     def initial_state(self, batch=1, length=1):
-        init_h = hk.get_parameter("initial_h", shape=(self.hidden,), init=hk.initializers.VarianceScaling())
-        init_h = jnp.repeat(init_h[None, :], batch, axis=0)
-        init_h = jnp.repeat(init_h[:, None, :], length, axis=1)
+        if self.learn_initial_h:
+            init_h = hk.get_parameter("initial_h", shape=(self.hidden,), init=hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform"))
+            init_h = jnp.repeat(init_h[None, :], batch, axis=0)
+            init_h = jnp.repeat(init_h[:, None, :], length, axis=1)
+        else:
+            # This is all zeros
+            init_h = jnp.repeat(self.gru.initial_state(batch_size=batch)[:, None, :], length, axis=1)
         return init_h
         
     def gru_step(self, prev_state, inputs):
@@ -56,10 +61,7 @@ class GRU(hk.Module):
             reset = jnp.zeros((N, T), dtype=bool)
 
         if carry is None:
-            if self.learn_initial_h:
-                carry = self.initial_state(N, T)
-            else:
-                carry = jnp.repeat(self.gru.initial_state(batch_size=N)[:, None, :], T, axis=1)
+            carry = self.initial_state(N, T)
         elif len(carry.shape) < 3:
             carry = carry[:, None, :]
         
@@ -117,17 +119,16 @@ class MazeGRUNetReLU(hk.Module):
     def __init__(self, hidden: int, learn_initial_h=True, name: str = ""):
         super().__init__(name=name)
         self.hidden = hidden
-        w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
-        b_conv_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
+        xavier = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
 
-        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_init, name='conv_1')
+        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=xavier, name='conv1')
 
-        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_init, name='conv_2')
+        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=xavier, name='conv2')
 
         self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
 
         self.gru = GRU(self.hidden, learn_initial_h=learn_initial_h, name='gru')
-        
+
         self.phi = hk.Flatten(preserve_dims=2, name='phi')
 
     def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
@@ -160,9 +161,9 @@ class MazeGRUNetReLU(hk.Module):
         h = jnp.reshape(h, (N, T, *feat))
         
         h = self.flatten(h)
-        
+ 
         outputs_sequence, states_sequence, initial_carry = self.gru(h, reset, carry, is_target=is_target)
-        
+
         outputs_sequence = jax.nn.relu(outputs_sequence)
         
         outputs_sequence = self.phi(outputs_sequence)
@@ -175,12 +176,11 @@ class MazeGRUNetFTA(hk.Module):
         super().__init__(name=name)
         self.hidden = hidden
         self.eta = eta
-        w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
-        b_conv_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
+        xavier = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
 
-        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_init, name='conv_1')
+        self.conv1 = hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=xavier, name='conv1')
 
-        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_init, name='conv_2')
+        self.conv2 = hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=xavier, name='conv2')
 
         self.flatten = hk.Flatten(preserve_dims=2, name='flatten')
 
@@ -357,32 +357,28 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
         elif name == 'MazeNetReLU':
             # Use Pytorch default initialization for Conv2d
             # see https://github.com/pytorch/pytorch/blob/9bc9d4cdb4355a385a7d7959f07d04d1648d6904/torch/nn/modules/conv.py#L178
-            w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
-            b_conv_1_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
-            w_init = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
+            xavier = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
             layers = [
-                hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv'),
+                hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=xavier, name='conv'),
                 jax.nn.relu,
-                hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv_1'),
+                hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=xavier, name='conv_1'),
                 jax.nn.relu,
                 hk.Flatten(name='flatten'),
-                hk.Linear(hidden, w_init=w_init, name='linear'),
+                hk.Linear(hidden, w_init=xavier, name='linear'),
                 jax.nn.relu,
                 hk.Flatten(name='phi'),
             ]
 
         elif name == 'MazeNetFTA':
             # https://github.com/pytorch/pytorch/blob/9bc9d4cdb4355a385a7d7959f07d04d1648d6904/torch/nn/modules/conv.py#L178
-            w_conv_init = hk.initializers.VarianceScaling(math.sqrt(5), "fan_avg", "uniform")
-            b_conv_1_init = hk.initializers.VarianceScaling(1.0, "fan_in", "uniform")
-            w_init = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
+            xavier = hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform")
             layers = [
-                hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv'),
+                hk.Conv2D(output_channels=32, kernel_shape=4, stride=1, padding=[(1, 1)], w_init=xavier, name='conv'),
                 jax.nn.relu,
-                hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=w_conv_init, b_init=b_conv_1_init, name='conv_1'),
+                hk.Conv2D(output_channels=16, kernel_shape=4, stride=2, padding=[(2, 2)], w_init=xavier, name='conv_1'),
                 jax.nn.relu,
                 hk.Flatten(name='flatten'),
-                hk.Linear(hidden, name='linear'),  # What's a suitable weight/bias initializer for FTA?
+                hk.Linear(hidden, w_init=xavier, name='linear'),
                 lambda x: fta(x, eta=params['eta'], tiles=20, lower_bound=-2, upper_bound=2),
                 hk.Flatten(name='phi'),
             ]
@@ -396,7 +392,7 @@ def buildFeatureNetwork(inputs: Tuple, params: Dict[str, Any], rng: Any):
             return net(x, *args, **kwargs)
         
         elif name == 'MazeGRUNetFTA':
-            net = MazeGRUNetFTA(hidden=hidden, eta=params['eta'], learn_initial_h=params.get('learn_initial_h', True), name='MazeGRUNetReLU')
+            net = MazeGRUNetFTA(hidden=hidden, eta=params['eta'], learn_initial_h=params.get('learn_initial_h', True), name='MazeGRUNetFTA')
             return net(x, *args, **kwargs)
         
         elif name == 'Linear':

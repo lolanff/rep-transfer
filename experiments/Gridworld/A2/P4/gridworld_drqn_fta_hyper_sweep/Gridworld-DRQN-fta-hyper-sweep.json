@@ -19,7 +19,7 @@
         "train_use_all_steps": false,
         "normalizer": {
             "state": {
-                "coeff": 1.0
+                "coeff": 255.0
             }
         },
         "optimizer": {
