@@ -21,7 +21,7 @@ class GRU(hk.Module):
         
     def initial_state(self, batch=1, length=1):
         if self.learn_initial_h:
-            init_h = hk.get_parameter("initial_h", shape=(self.hidden,), init=hk.initializers.VarianceScaling(1.0, "fan_avg", "uniform"))
+            init_h = hk.get_parameter("initial_h", shape=(self.hidden,), init=jnp.zeros)
             init_h = jnp.repeat(init_h[None, :], batch, axis=0)
             init_h = jnp.repeat(init_h[:, None, :], length, axis=1)
         else:
@@ -75,7 +75,7 @@ class GRU(hk.Module):
         outputs_sequence, states_sequence = jax.vmap(self.process_sequence)(x, reset, carry)
 
         # Return both the GRU outputs and hidden states across the entire sequence.
-        return outputs_sequence, states_sequence, self.initial_state(1, 1)[:, 0, ...] if self.learn_initial_h else self.gru.initial_state(batch_size=1)
+        return outputs_sequence, states_sequence, self.initial_state(1, 1)[:, 0, ...]
 
 class TMazeGRUNetReLU(hk.Module):
     def __init__(self, hidden: int, learn_initial_h=True, name: str = ""):
@@ -88,7 +88,7 @@ class TMazeGRUNetReLU(hk.Module):
         
         self.phi = hk.Flatten(preserve_dims=2, name='phi')
 
-    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def __call__(self, x: jnp.ndarray, reset: jnp.ndarray = None, carry: jnp.ndarray = None, is_target = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         """
         Args:
           x: Input tensor with shape [N, T, ...]
