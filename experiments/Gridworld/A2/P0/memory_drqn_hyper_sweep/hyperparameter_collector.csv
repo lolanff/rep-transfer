@@ -1,0 +1,4 @@
+,Environment,Algorithm,Hyperparameter,Value,AUC,Return,Successes
+0,memory_drqn_hyper_sweep,Memory-DRQN-hyper-sweep-32,optimizer.alpha,0.0001,-258.96081174570685,-29648.299999999897,1.0
+1,memory_drqn_hyper_sweep,Memory-DRQN-hyper-sweep-32-binary-reward-norm-6,optimizer.alpha,0.0001,15.452631578947367,26748.0,0.49568221070811747
+2,memory_drqn_hyper_sweep,Memory-DRQN-hyper-sweep-32-norm-6,optimizer.alpha,1e-05,-54.224076013513425,-25752.19999999999,1.0

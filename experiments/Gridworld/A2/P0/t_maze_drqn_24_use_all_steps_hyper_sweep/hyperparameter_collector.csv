@@ -1,0 +1,6 @@
+,Environment,Algorithm,Hyperparameter,Value,AUC,Return,Successes
+0,t_maze_drqn_24_use_all_steps_hyper_sweep,TMaze-DRQN-24-use-all-steps-hyper-sweep,optimizer.alpha,0.0001,64.088,35175.74,0.9717208182912154
+1,t_maze_drqn_24_use_all_steps_hyper_sweep,TMaze-DRQN-24-use-all-steps-hyper-sweep,optimizer.alpha,0.0001,64.088,35175.74,0.974510966212211
+2,t_maze_drqn_24_use_all_steps_hyper_sweep,TMaze-DRQN-24-use-all-steps-hyper-sweep,optimizer.alpha,0.0001,64.088,35175.74,0.9710743801652892
+3,t_maze_drqn_24_use_all_steps_hyper_sweep,TMaze-DRQN-24-use-all-steps-hyper-sweep,optimizer.alpha,0.0001,64.088,35175.74,0.9738339021615472
+4,t_maze_drqn_24_use_all_steps_hyper_sweep,TMaze-DRQN-24-use-all-steps-hyper-sweep,optimizer.alpha,0.0001,64.088,35175.74,0.9686323713927227
