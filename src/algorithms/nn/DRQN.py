@@ -64,7 +64,7 @@ class DRQN(NNAgent):
             lambda: MultiLayerHead(actions=self.actions, name='q')
         )
         
-    def values(self, x: np.ndarray, *args, **kwargs):
+    def values(self, x: np.ndarray, carry=None):
         x = np.asarray(x)
 
         # if x is a vector, then jax handles a lack of "batch" dimension gracefully
@@ -72,11 +72,11 @@ class DRQN(NNAgent):
         # if x is a tensor, jax does not handle lack of "batch" dim gracefully
         if len(x.shape) > 1:
             x = np.expand_dims(x, 0)
-            q, carry, initial_carry = self._values(self.state, x, *args, **kwargs)
+            q, carry, initial_carry = self._values(self.state, x, carry=carry)
             q = q[0]
 
         else:
-            q, carry, initial_carry = self._values(self.state, x, *args, **kwargs)
+            q, carry, initial_carry = self._values(self.state, x, carry=carry)
 
         return jax.device_get(q), jax.device_get(carry), jax.device_get(initial_carry)
 
@@ -85,8 +85,11 @@ class DRQN(NNAgent):
         pi = egreedy_probabilities(q, self.actions, self.epsilon)
         return pi
 
-    # internal compiled version of the value function
-    # TODO: carry the hidden state
+    def ext_policy(self, obs: np.ndarray, carry: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        q, carry, _ = self.values(obs, carry=carry)
+        pi = egreedy_probabilities(q, self.actions, self.epsilon)
+        return pi, q, carry
+
     @partial(jax.jit, static_argnums=0)
     def _values(self, state: AgentState, x: jax.Array, carry: jax.Array = None): # type: ignore
         phi = self.phi(state.params, x, carry=carry)

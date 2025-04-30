@@ -25,7 +25,7 @@ ci_percentile = 0.95
 
 def compute_bootstrap_ci(data, ci=0.95):
     if len(data) > 1:
-        ci_bounds = bootstrap((data,), np.mean, confidence_level=ci, n_resamples=1000, method='percentile').confidence_interval
+        ci_bounds = bootstrap((data,), np.mean, confidence_level=ci, n_resamples=10000, method='percentile').confidence_interval
         return ci_bounds.low, ci_bounds.high
     else:
         return data[0], data[0]

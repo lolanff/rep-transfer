@@ -16,7 +16,7 @@
         "n_step": 1,
         "update_freq": 1,
         "sequence_length": 16,
-        "train_use_all_steps": false,
+        "train_use_all_steps": true,
         "normalizer": {
             "state": {
                 "coeff": 255.0

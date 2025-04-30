@@ -14,6 +14,7 @@ from rlglue import RlGlue
 from experiment import ExperimentModel
 from utils.checkpoint import Checkpoint
 from utils.preempt import TimeoutHandler
+from utils.policies import egreedy_probabilities, sample
 from problems.registry import getProblem
 from ml_instrumentation.Collector import Collector
 from ml_instrumentation.Sampler import Identity, Ignore, MovingAverage, Subsample
@@ -21,6 +22,8 @@ from ml_instrumentation.utils import Pipe
 from ml_instrumentation.metadata import attach_metadata
 from PyExpUtils.results.tools import getParamsAsDict
 import jax
+
+from environments.GridworldGoal import GridHardRGBGoal as Env
 
 # ------------------
 # -- Command Args --
@@ -85,6 +88,7 @@ for idx in indices:
     params = exp.get_hypers(idx)
     seed = run + params.get("experiment", {}).get("seed_offset", 0)
     np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     # build stateful things and attach to checkpoint
     problem = chk.build('p', lambda: Problem(exp, idx, collector))
@@ -112,6 +116,8 @@ for idx in indices:
     # Number of consecutive completion of experiments
     consecutive_completion_counter = 0
 
+    env = Env("0")
+
     for step in range(glue.total_steps, exp.total_steps):
         collector.next_frame()
         chk.maybe_save()
@@ -135,6 +141,19 @@ for idx in indices:
             fps = step / (time.time() - start_time)
 
             episode = chk['episode']
+            
+            if True:
+                q_diff = []
+                for _ in range(5):
+                    obs = env.start().astype(jnp.float32)
+                    pi, _, carry = agent.ext_policy(obs)
+                    obs = env.step(sample(pi, rng=rng))[0].astype(jnp.float32)
+                    val = agent.values(obs, carry=carry)[0]
+                    val2 = agent.values(obs)[0]
+                    q_diff.append(np.linalg.norm(val-val2)/np.abs(np.max((val, val2))))
+                mean_q_diff = np.mean(q_diff).item()
+                collector.collect('q_diff', mean_q_diff)
+            
             logger.debug(f'{episode} {step} {glue.total_reward} {avg_time:.4}ms {int(fps)}')
 
             # stop the experiment if condition met

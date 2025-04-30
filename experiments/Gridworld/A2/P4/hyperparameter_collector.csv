@@ -1,5 +1,5 @@
 ,Environment,Algorithm,Hyperparameter,Value,AUC,Return,Successes
-0,gridworld_drqn_hyper_sweep,Gridworld-DRQN-hyper-sweep,optimizer.alpha,0.001,0.968,104.2,0.09661835669094539
-1,gridworld_drqn_fta_hyper_sweep,Gridworld-DRQN-fta-hyper-sweep,optimizer.alpha,3e-05,0.712,74.8,0.08691604000015216
-2,gridworld_dqn_hyper_sweep,Gridworld-DQN-hyper-sweep,optimizer.alpha,0.0001,8.074000000000002,3136.2,0.9968421052631579
-3,gridworld_dqn_fta_hyper_sweep,Gridworld-DQN-fta-hyper-sweep,optimizer.alpha,0.0001,7.725999999999999,3080.0,1.0
+0,gridworld_dqn_hyper_sweep,Gridworld-DQN-hyper-sweep,optimizer.alpha,0.0001,8.3852,3447.96,1.0
+1,gridworld_drqn_fta_hyper_sweep,Gridworld-DRQN-fta-hyper-sweep,optimizer.alpha,0.0001,7.4403999999999995,2927.0,1.0
+2,gridworld_drqn_hyper_sweep,Gridworld-DRQN-hyper-sweep,optimizer.alpha,0.0001,8.2092,3309.16,1.0
+3,gridworld_dqn_fta_hyper_sweep,Gridworld-DQN-fta-hyper-sweep,optimizer.alpha,0.0003,7.900399999999999,3216.88,0.9637037037037036

@@ -16,15 +16,15 @@
         "n_step": 1,
         "update_freq": 1,
         "sequence_length": 16,
-        "train_use_all_steps": false,
+        "train_use_all_steps": true,
         "normalizer": {
             "state": {
-                "coeff": 1.0
+                "coeff": 255.0
             }
         },
         "optimizer": {
             "name": "ADAM",
-            "alpha": 3e-05,
+            "alpha": 0.0001,
             "beta1": 0.9,
             "beta2": 0.999
         },
