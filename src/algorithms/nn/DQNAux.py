@@ -86,6 +86,8 @@ class DQNAux(DQN):
 
     def update(self):
         self.steps += 1
+        
+        self.update_epsilon()
 
         # Only update every `update_freq` steps
         if self.steps % self.update_freq != 0:

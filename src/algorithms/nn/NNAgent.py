@@ -32,7 +32,15 @@ class NNAgent(BaseAgent):
         self.rep_params: Dict = params['representation']
         self.optimizer_params: Dict = params['optimizer']
 
-        self.epsilon = params['epsilon']
+        self.epsilon = params.get('epsilon')
+        self.is_epsilon_decay = False
+        if self.epsilon is None:
+            self.is_epsilon_decay = True
+            self.epsilon_init = params["epsilon_init"]
+            self.epsilon_final = params["epsilon_final"]
+            self.epsilon_steps = params["epsilon_steps"]
+            self.epsilon = self.epsilon_init
+
         self.reward_clip = params.get('reward_clip', 0)
 
         # ---------------------
@@ -195,3 +203,10 @@ class NNAgent(BaseAgent):
         ))
 
         self.update()
+
+    def update_epsilon(self):
+        if self.is_epsilon_decay:
+            self.epsilon = max(
+                self.epsilon_init - (self.steps / self.epsilon_steps) * (self.epsilon_init - self.epsilon_final),
+                self.epsilon_final
+            )

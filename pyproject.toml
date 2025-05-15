@@ -20,7 +20,7 @@ classifiers = [
 dependencies = [
     # custom minatar with jit compiled environments
     'MinAtar @ git+https://github.com/andnp/MinAtar',
-    'foragerenv @ git+https://github.com/andnp/forager',
+    'foragerenv @ git+https://github.com/steventango/forager',
     'gymnasium[atari, box2d]>=1.0.0',
     'gym-minigrid',
     'minigrid',
@@ -42,6 +42,7 @@ dependencies = [
     'PyExpPlotting-andnp',
     'matplotlib',
     "ml-instrument>=0.3.1",
+    'moviepy',
 ]
 
 [dependency-groups]

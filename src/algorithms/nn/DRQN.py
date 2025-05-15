@@ -33,8 +33,9 @@ def q_loss(q, a, r, gamma, qp):
     target = jax.lax.stop_gradient(target)
     delta = target - q[a]
 
-    #return huber_loss(1.0, q[a], target), {
-    return mse_loss(q[a], target), {
+    # TODO: make this controlled by config
+    return huber_loss(1.0, q[a], target), {
+    # return mse_loss(q[a], target), {
         'delta': delta,
     }
 
@@ -97,6 +98,8 @@ class DRQN(NNAgent):
 
     def update(self):
         self.steps += 1
+        
+        self.update_epsilon()
 
         # only update every `update_freq` steps
         if self.steps % self.update_freq != 0:
