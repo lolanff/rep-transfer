@@ -13,4 +13,4 @@ apptainer exec -C -B .:$HOME pyproject.sif python scripts/slurm.py --cluster clu
 
 *Update Environment*
 ---
-Acknowledgement: This repository is adapted from erfanMhi/LTA-Representation-Properties, andnp/rl-control-template, and steventango/sparse-feature-transfer.
+Acknowledgement: This repository is adapted from erfanMhi/LTA-Representation-Properties, andnp/rl-control-template, and steventango/sparse-feature-transfer, steventango/forager-agents.
