@@ -1,0 +1,1 @@
+Sweep pretraining of the RNN agent on Han's maze with 32:1 and 2:16

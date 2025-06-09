@@ -27,17 +27,22 @@ class AgentState:
     optim: optax.OptState
 
 
-def q_loss(q, a, r, gamma, qp):
+def q_loss(q, a, r, gamma, qp, loss='mse'):
     vp = qp.max()
     target = r + gamma * vp
     target = jax.lax.stop_gradient(target)
     delta = target - q[a]
 
-    # TODO: make this controlled by config
-    return huber_loss(1.0, q[a], target), {
-    # return mse_loss(q[a], target), {
-        'delta': delta,
-    }
+    if loss == 'mse':
+        return mse_loss(q[a], target), {
+            'delta': delta,
+        }
+    elif loss == 'huber':    
+        return huber_loss(1.0, q[a], target), {
+            'delta': delta,
+        }
+    else:
+        raise NotImplementedError
 
 class DRQN(NNAgent):
     def __init__(self, observations: Tuple, actions: int, params: Dict, collector: Collector, seed: int):
@@ -49,6 +54,7 @@ class DRQN(NNAgent):
         self.trainable_steps = self.sequence_length - self.burn_in_steps
         if self.trainable_steps < 1:
             raise Exception("Sequence length must be longer than burn in steps")
+        self.loss = params.get('loss', 'mse')
         self.carry = None
         self.state = AgentState(
             params=self.state.params,
@@ -80,6 +86,19 @@ class DRQN(NNAgent):
             q, carry, initial_carry = self._values(self.state, x, carry=carry)
 
         return jax.device_get(q), jax.device_get(carry), jax.device_get(initial_carry)
+    
+    def rep_values(self, x: np.ndarray, carry=None):
+        x = np.asarray(x)
+
+        # if x is a vector, then jax handles a lack of "batch" dimension gracefully
+        #   at a 5x speedup
+        # if x is a tensor, jax does not handle lack of "batch" dim gracefully
+        if len(x.shape) > 1:
+            x = np.expand_dims(x, 0)
+        
+        q, carry, initial_carry = self._rep_values(self.state, x, carry=carry)
+
+        return jax.device_get(q), jax.device_get(carry), jax.device_get(initial_carry)
 
     def policy(self, obs: np.ndarray) -> np.ndarray:
         q, self.carry, _ = self.values(obs, carry=self.carry)
@@ -95,6 +114,11 @@ class DRQN(NNAgent):
     def _values(self, state: AgentState, x: jax.Array, carry: jax.Array = None): # type: ignore
         phi = self.phi(state.params, x, carry=carry)
         return self.q(state.params, phi[0][:, -1]), phi[1][:, -1], phi[2]
+    
+    @partial(jax.jit, static_argnums=0)
+    def _rep_values(self, state: AgentState, x: jax.Array, carry: jax.Array = None): # type: ignore
+        phi = self.phi(state.params, x, carry=carry)
+        return phi[0], phi[1][:, -1], phi[2] # phi, h_last, h_init   Note in GRU phi == h
 
     def update(self):
         self.steps += 1
@@ -182,11 +206,8 @@ class DRQN(NNAgent):
 
         if self.train_use_all_steps:
             # After the representation layer, we use all
-            qs = self.q(params, phi)
-            qsp = self.q(target, phi_p)
-
-            qs = qs.reshape(-1, qs.shape[-1])
-            qsp = qsp.reshape(-1, qsp.shape[-1])
+            phi = phi.reshape(-1, phi.shape[-1])
+            phi_p = phi_p.reshape(-1, phi_p.shape[-1])
             
             weights = weights.ravel()
             a = a.ravel()
@@ -194,17 +215,19 @@ class DRQN(NNAgent):
             gamma = gamma.ravel()
 
         else:
-            weights = weights[:, -1]
-
             # After the representation layer, we just use the last
-            qs = self.q(params, phi[:, -1, ...])
-            qsp = self.q(target, phi_p[:, -1, ...])
-
+            phi = phi[:, -1, :]
+            phi_p = phi_p[:, -1, :]
+            
+            weights = weights[:, -1]
             a = a[:, -1, ...]
             r = r[:, -1, ...]
             gamma = gamma[:, -1, ...]
             
-        batch_loss = jax.vmap(q_loss, in_axes=0)
+        qs = self.q(params, phi)
+        qsp = self.q(target, phi_p)
+            
+        batch_loss = jax.vmap(partial(q_loss, loss=self.loss), in_axes=0)
         losses, metrics = batch_loss(qs, a, r, gamma, qsp)
 
         chex.assert_equal_shape((weights, losses))

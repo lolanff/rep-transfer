@@ -142,7 +142,7 @@ for idx in indices:
 
             episode = chk['episode']
             
-            if True:
+            if False:
                 q_diff = []
                 for _ in range(5):
                     obs = env.start().astype(jnp.float32)
@@ -177,8 +177,8 @@ for idx in indices:
     meta |= {'seed': exp.getRun(idx)}
     attach_metadata(save_path, idx, meta)
     collector.merge(context.resolve('results.db'))
-    collector.close()
     if problem.exp_params.get("save", {}): 
         chk.save()
     else: 
         chk.delete()
+    collector.close()

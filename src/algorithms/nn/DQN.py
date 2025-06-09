@@ -24,23 +24,29 @@ class AgentState:
     optim: optax.OptState
 
 
-def q_loss(q, a, r, gamma, qp):
+def q_loss(q, a, r, gamma, qp, loss='mse'):
     vp = qp.max()
     target = r + gamma * vp
     target = jax.lax.stop_gradient(target)
     delta = target - q[a]
 
-    # TODO: make this controlled by config
-    return huber_loss(1.0, q[a], target), {
-    # return mse_loss(q[a], target), {
-        'delta': delta,
-    }
+    if loss == 'mse':
+        return mse_loss(q[a], target), {
+            'delta': delta,
+        }
+    elif loss == 'huber':    
+        return huber_loss(1.0, q[a], target), {
+            'delta': delta,
+        }
+    else:
+        raise NotImplementedError
 
 class DQN(NNAgent):
     def __init__(self, observations: Tuple, actions: int, params: Dict, collector: Collector, seed: int):
         super().__init__(observations, actions, params, collector, seed)
         # set up the target network parameters
         self.target_refresh = params['target_refresh']
+        self.loss = params.get('loss', 'mse')
         self.state = AgentState(
             params=self.state.params,
             target_params=deepcopy(self.state.params), # without deepcopy, load_from_checkpoint overwrites params with target_params
@@ -121,7 +127,7 @@ class DQN(NNAgent):
         qs = self.q(params, phi)
         qsp = self.q(target, phi_p)
 
-        batch_loss = jax.vmap(q_loss, in_axes=0)
+        batch_loss = jax.vmap(partial(q_loss, loss=self.loss), in_axes=0)
         losses, metrics = batch_loss(qs, batch.a, batch.r, batch.gamma, qsp)
 
         chex.assert_equal_shape((weights, losses))

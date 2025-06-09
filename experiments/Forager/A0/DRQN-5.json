@@ -4,6 +4,7 @@
     "total_steps": 500000,
     "episode_cutoff": -1,
     "metaParameters": {
+        "loss": "huber",
         "epsilon_init": 1,
         "epsilon_final": 0.05,
         "epsilon_steps": 400000,
