@@ -1,0 +1,5 @@
+,Environment,Algorithm,Hyperparameter,Value,AUC,Return,Successes
+0,gridworldpartial_drqn_2_16_pretrain_hyper_sweep,DRQN-ReLU-Gridworld,optimizer.alpha,0.0001,27.387999999999998,10862.8,0.9990567501547041
+1,gridworldpartial_drqn_2_16_pretrain_hyper_sweep,DRQN-FTA-Gridworld,optimizer.alpha,0.0003,27.468,10655.8,0.9975297030753592
+2,gridworldpartial_dqn_pretrain_hyper_sweep,DQN-FTA-GridworldPartial,optimizer.alpha,0.0001,19.688,3929.0,0.6936570626236991
+3,gridworldpartial_dqn_pretrain_hyper_sweep,DQN-ReLU-GridworldPartial,optimizer.alpha,3e-05,19.936,4335.2,0.716460281727735

@@ -1,0 +1,41 @@
+{
+    "agent": "DQN-ReLU-GridworldPartial",
+    "problem": "GridworldPartial",
+    "total_steps": 300000,
+    "episode_cutoff": 100,
+    "metaParameters": {
+        "experiment": {
+            "load": false,
+            "save": true,
+            "seed_offset": 10000
+        },
+        "epsilon": 0.1,
+        "target_refresh": 64,
+        "buffer_type": "uniform",
+        "buffer_size": 10000,
+        "batch": 32,
+        "n_step": 1,
+        "update_freq": 1,
+        "normalizer": {
+            "state": {
+                "coeff": 255.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": 3e-05,
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeNetReLU",
+            "hidden": 32,
+            "frozen": false
+        },
+        "environment": {
+            "goal_id": "0",
+            "fov": 5
+        }
+    },
+    "early_saving": 100
+}
