@@ -23,6 +23,7 @@ from ml_instrumentation.metadata import attach_metadata
 from PyExpUtils.results.tools import getParamsAsDict
 import jax
 
+from tqdm import tqdm
 from environments.GridworldGoal import GridHardRGBGoal as Env
 
 # ------------------
@@ -77,9 +78,10 @@ for idx in indices:
             'return': Identity(),
             'episode': Identity(),
             'steps': Identity(),
+            'success': Identity(),
         },
         # by default, ignore keys that are not explicitly listed above
-        default=Identity(),
+        default=Ignore(),
     ))
     collector.set_experiment_id(idx)
     run = exp.getRun(idx)
@@ -118,7 +120,7 @@ for idx in indices:
 
     env = Env("0")
 
-    for step in range(glue.total_steps, exp.total_steps):
+    for step in tqdm(range(glue.total_steps, exp.total_steps)):
         collector.next_frame()
         chk.maybe_save()
         interaction = glue.step()

@@ -8,7 +8,7 @@ import subprocess
 from functools import partial
 from multiprocessing.pool import Pool
 
-from PyExpUtils.runner.utils import gather_missing_indices
+from utils.results import gather_missing_indices
 import experiment.ExperimentModel as Experiment
 
 parser = argparse.ArgumentParser()

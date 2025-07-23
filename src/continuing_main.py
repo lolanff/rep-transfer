@@ -9,16 +9,22 @@ import socket
 import logging
 import argparse
 import numpy as np
-import jax
+import jax.numpy as jnp
 from rlglue import RlGlue
 from experiment import ExperimentModel
 from utils.checkpoint import Checkpoint
 from utils.preempt import TimeoutHandler
+from utils.policies import egreedy_probabilities, sample
 from problems.registry import getProblem
-from PyExpUtils.results.sqlite import saveCollector
-from PyExpUtils.collection.Collector import Collector
-from PyExpUtils.collection.Sampler import Ignore, MovingAverage, Subsample
-from PyExpUtils.collection.utils import Pipe
+from ml_instrumentation.Collector import Collector
+from ml_instrumentation.Sampler import Identity, Ignore, MovingAverage, Subsample
+from ml_instrumentation.utils import Pipe
+from ml_instrumentation.metadata import attach_metadata
+from PyExpUtils.results.tools import getParamsAsDict
+import jax
+
+
+
 from tqdm import tqdm
 from PIL import Image
 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
@@ -32,6 +38,7 @@ parser.add_argument('-i', '--idxs', nargs='+', type=int, required=True)
 parser.add_argument('--save_path', type=str, default='./')
 parser.add_argument('--checkpoint_path', type=str, default='./checkpoints/')
 parser.add_argument('--silent', action='store_true', default=False)
+parser.add_argument('--debug', action='store_true', default=False)
 parser.add_argument('--gpu', action='store_true', default=False)
 
 args = parser.parse_args()
@@ -48,7 +55,7 @@ logging.getLogger('numba').setLevel(logging.WARNING)
 logging.getLogger('jax').setLevel(logging.WARNING)
 logger = logging.getLogger('exp')
 prod = 'cdr' in socket.gethostname() or args.silent
-if not prod:
+if args.debug or not prod:
     logging.basicConfig(level=logging.DEBUG)
     logger.setLevel(logging.DEBUG)
 
@@ -63,13 +70,8 @@ indices = args.idxs
 
 Problem = getProblem(exp.problem)
 for idx in indices:
-    chk = Checkpoint(exp, idx, base_path=args.checkpoint_path, save_every=120)
+    chk = Checkpoint(exp, idx, base_path=args.checkpoint_path)
     chk.load_if_exists()
-
-    # Test checkpointing (fail early if it doesn't work)
-    chk.save()
-    chk.delete()
-
     timeout_handler.before_cancel(chk.save)
 
     collector = chk.build('collector', lambda: Collector(
@@ -87,7 +89,7 @@ for idx in indices:
         # by default, ignore keys that are not explicitly listed above
         default=Ignore(),
     ))
-    collector.setIdx(idx)
+    collector.set_experiment_id(idx)
     run = exp.getRun(idx)
 
     # set random seeds accordingly
@@ -97,6 +99,7 @@ for idx in indices:
 
     # build stateful things and attach to checkpoint
     problem = chk.build('p', lambda: Problem(exp, idx, collector))
+    problem.seed = seed
     agent = chk.build('a', problem.getAgent)
     env = chk.build('e', problem.getEnvironment)
 
@@ -126,6 +129,8 @@ for idx in indices:
     image = Image.fromarray(rgb_array)
     image = image.resize((rgb_array.shape[1] * 10, rgb_array.shape[0] * 10), Image.Resampling.NEAREST)
     image.save(path + f"/env.png")
+    
+    avg_reward = 0.
 
     for step in tqdm(range(glue.total_steps, exp.total_steps)):
         collector.next_frame()
@@ -133,12 +138,13 @@ for idx in indices:
         interaction = glue.step()
 
         collector.collect('reward', interaction.reward)
+        
+        avg_reward = 0.999 * avg_reward + (1. - 0.999) * interaction.reward
 
         if step % 500 == 0 and step > 0:
             avg_time = 1000 * (time.time() - start_time) / (step + 1)
             fps = step / (time.time() - start_time)
 
-            avg_reward = collector.get_last('reward')
             logger.debug(f'{step} {avg_reward} {avg_time:.4}ms {int(fps)}')
 
         if step > 899999 and step % video_frequency < video_length or (exp.total_steps - 1) - step < video_length:
@@ -161,5 +167,14 @@ for idx in indices:
     # ------------
     # -- Saving --
     # ------------
-    saveCollector(exp, collector, base=args.save_path)
-    chk.delete()
+    context = exp.buildSaveContext(idx, base=args.save_path)
+    save_path = context.resolve('results.db')
+    meta = getParamsAsDict(exp, idx)
+    meta |= {'seed': exp.getRun(idx)}
+    attach_metadata(save_path, idx, meta)
+    collector.merge(context.resolve('results.db'))
+    if problem.exp_params.get("save", {}): 
+        chk.save()
+    else: 
+        chk.delete()
+    collector.close()

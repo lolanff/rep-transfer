@@ -11,7 +11,8 @@ import experiment.ExperimentModel as Experiment
 
 from functools import partial
 from PyExpUtils.utils.generator import group
-from PyExpUtils.runner.utils import approximate_cost, gather_missing_indices
+from PyExpUtils.runner.utils import approximate_cost
+from utils.results import gather_missing_indices
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--cluster', type=str, required=True)
@@ -104,7 +105,7 @@ for path in missing:
             print(f'script={script}')
             exit()
 
-        script_name = f'slurm_scripts/job_{min(l)}-{max(l)}.sh'
+        script_name = f'slurm_scripts/job_{path.replace("/", "_")}_{min(l)}-{max(l)}.sh'
         with open(script_name, 'w') as f:
             f.write(script)
         os.chmod(script_name, 0o755) 

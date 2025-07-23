@@ -1,0 +1,1 @@
+Duadrupled batch size compared to P1, from 2 to 8.
