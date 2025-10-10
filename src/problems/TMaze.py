@@ -1,5 +1,5 @@
 # Implement T-maze from https://papers.nips.cc/paper/2001/hash/a38b16173474ba8b1a95bcbc30d3b8a5-Abstract.html
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from environments.TMaze import TMaze as Env
 from experiment.ExperimentModel import ExperimentModel
 from problems.BaseProblem import BaseProblem

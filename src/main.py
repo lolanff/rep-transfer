@@ -120,7 +120,7 @@ for idx in indices:
 
     env = Env("0")
 
-    for step in tqdm(range(glue.total_steps, exp.total_steps)):
+    for step in tqdm(range(glue.total_steps, exp.total_steps), miniters=1000):
         collector.next_frame()
         chk.maybe_save()
         interaction = glue.step()

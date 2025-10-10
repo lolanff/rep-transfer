@@ -1,0 +1,42 @@
+{
+    "agent": "DRQN-GridworldPartial-Random",
+    "problem": "GridworldPartial",
+    "total_steps": 100000,
+    "episode_cutoff": 100,
+    "metaParameters": {
+        "experiment": {
+            "load": false,
+            "save": true,
+            "seed_offset": 0
+        },
+        "epsilon": 1,
+        "target_refresh": 64,
+        "buffer_type": "rnn_uniform",
+        "buffer_size": 100000,
+        "batch": 1,
+        "n_step": 1,
+        "update_freq": 100000,
+        "sequence_length": 100,
+        "train_use_all_steps": false,
+        "normalizer": {
+            "state": {
+                "coeff": 255.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": 3e-05,
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeGRUNetReLU",
+            "hidden": 1,
+            "frozen": true
+        },
+        "environment": {
+            "goal_id": "0",
+            "fov": 5
+        }
+    }
+}

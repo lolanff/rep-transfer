@@ -1,1 +1,1 @@
-This is a trial to see what a blind agent is able to learn
+This is a trial to see what a blind agent is able to learn. DQN and DRQN have slight improvements over random, but not significant.

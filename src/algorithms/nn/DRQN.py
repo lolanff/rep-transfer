@@ -1,7 +1,7 @@
 from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Tuple
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from ReplayTables.ReplayBuffer import Batch, LaggedTimestep
 from jax.tree_util import tree_flatten
 from algorithms.nn.NNAgent import NNAgent
@@ -66,10 +66,12 @@ class DRQN(NNAgent):
     # -- NN agent interface --
     # ------------------------
     def _build_heads(self, builder: NetworkBuilder) -> None:
-        #self.q = builder.addHead(lambda: hk.Linear(self.actions, name='q'))
-        self.q = builder.addHead(
-            lambda: MultiLayerHead(actions=self.actions, name='q')
-        )
+        if self.head == "MultiLayerHead":
+            self.q = builder.addHead(
+                lambda: MultiLayerHead(actions=self.actions, name='q')
+            )
+        else:
+            self.q = builder.addHead(lambda: hk.Linear(self.actions, name='q', w_init=hk.initializers.Orthogonal(np.sqrt(2))))
         
     def values(self, x: np.ndarray, carry=None):
         x = np.asarray(x)
@@ -257,7 +259,8 @@ class DRQN(NNAgent):
             extra={
                 'carry': carry,
                 'carryp': self.carry,
-                'reset': True
+                'reset': True,
+                'pos': None
                 }
         ))
 
@@ -280,6 +283,8 @@ class DRQN(NNAgent):
         # possibly process the reward
         if self.reward_clip > 0:
             r = np.clip(r, -self.reward_clip, self.reward_clip)
+            
+        pos = extra.get('pos', None)
 
         self.buffer.add_step(Timestep(
             x=xp,
@@ -290,7 +295,8 @@ class DRQN(NNAgent):
             extra={
                 'carry': carry,
                 'carryp': self.carry,
-                'reset': False
+                'reset': False,
+                'pos': pos
                 }
         ))
 
@@ -305,6 +311,8 @@ class DRQN(NNAgent):
         if self.reward_clip > 0:
             r = np.clip(r, -self.reward_clip, self.reward_clip)
 
+        pos = extra.get('pos', None)
+        
         self.buffer.add_step(Timestep(
             x=np.zeros(self.observations),
             a=-1,
@@ -314,7 +322,8 @@ class DRQN(NNAgent):
             extra={
                 'carry': carry,
                 'carryp': self.carry,
-                'reset': False
+                'reset': False,
+                'pos': pos
                 }
         ))
 

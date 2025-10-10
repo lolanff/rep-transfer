@@ -1,7 +1,7 @@
 from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Tuple
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from ReplayTables.ReplayBuffer import Batch
 
 from algorithms.nn.NNAgent import NNAgent
@@ -57,10 +57,13 @@ class DQN(NNAgent):
     # -- NN agent interface --
     # ------------------------
     def _build_heads(self, builder: NetworkBuilder) -> None:
-        #self.q = builder.addHead(lambda: hk.Linear(self.actions, name='q'))
-        self.q = builder.addHead(
-            lambda: MultiLayerHead(actions=self.actions, name='q')
-        )
+        if self.head == "MultiLayerHead":
+            self.q = builder.addHead(
+                lambda: MultiLayerHead(actions=self.actions, name='q')
+            )
+        else:
+            self.q = builder.addHead(lambda: hk.Linear(self.actions, name='q', w_init=hk.initializers.Orthogonal(np.sqrt(2))))
+        
 
     # internal compiled version of the value function
     @partial(jax.jit, static_argnums=0)

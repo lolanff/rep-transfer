@@ -1,0 +1,1 @@
+New property meaure, the similarity of representation for ending at the same location.

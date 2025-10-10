@@ -1,5 +1,5 @@
 from typing import Optional
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from rlglue.environment import BaseEnvironment
 
 from experiment.ExperimentModel import ExperimentModel
@@ -45,7 +45,7 @@ class BaseProblem:
         
         observations = self.observations
         
-        if self.params['buffer_type'] == 'rnn_uniform':
+        if 'buffer_type' in self.params and self.params['buffer_type'] == 'rnn_uniform':
             observations = (1,) + self.observations
 
         self.agent = Agent(observations, self.actions, self.params, self.collector, self.seed)

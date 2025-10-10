@@ -48,7 +48,7 @@ class GridHardXY(BaseEnvironment):
             return self.generate_state([x, y]), 0.0, False, False, {**self.get_info(), "success": False}
 
     def get_info(self):
-        return {"gamma": self.gamma}
+        return {"gamma": self.gamma, "pos": np.array(self.current_state)}
 
     def get_visualization_segment(self):
         state_coords = [[x, y] for x in range(15)

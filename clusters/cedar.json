@@ -4,6 +4,6 @@
     "account": "rrg-whitem",
     "time": "11:59:00",
     "cores": 4,
-    "mem_per_core": "2G",
+    "mem_per_core": "4G",
     "sequential": 20
 }

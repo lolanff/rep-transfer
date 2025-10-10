@@ -1,4 +1,4 @@
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from environments.Memory import Memory as Env
 from experiment.ExperimentModel import ExperimentModel
 from problems.BaseProblem import BaseProblem

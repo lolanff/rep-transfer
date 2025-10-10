@@ -23,9 +23,12 @@ class GridHardRGBGoal(GridHardRGB):
     def __init__(self, goal_id, seed=np.random.randint(int(1e5))):
         super().__init__(seed)
         data_path = os.path.dirname(os.path.abspath(__file__)) + "/env_data/sim2coord.json"
-        with open(data_path, 'r') as f:
-            self.goals = json.load(f)
-        self.goal_x, self.goal_y = self.goals[goal_id]
+        if goal_id == "-1":
+            self.goal_x, self.goal_y = -1, -1
+        else:
+            with open(data_path, 'r') as f:
+                self.goals = json.load(f)
+            self.goal_x, self.goal_y = self.goals[goal_id]
 
 class GridHardRGBGoalAll(GridHardRGB):
     def __init__(self, goal_id, seed=np.random.randint(int(1e5))):

@@ -59,7 +59,7 @@ if args.debug or not prod:
     logging.basicConfig(level=logging.DEBUG)
     logger.setLevel(logging.DEBUG)
 
-
+save_video = False
 # ----------------------
 # -- Experiment Def'n --
 # ----------------------
@@ -108,10 +108,11 @@ for idx in indices:
     # Run the experiment
     start_time = time.time()
 
-    context = exp.buildSaveContext(0, base=args.save_path)
-    path = context.ensureExists()
-    path += f'/{idx}'
-    os.makedirs(path, exist_ok=True)
+    if save_video:
+        context = exp.buildSaveContext(0, base=args.save_path)
+        path = context.ensureExists()
+        path += f'/{idx}'
+        os.makedirs(path, exist_ok=True)
 
     # if we haven't started yet, then make the first interaction
     if glue.total_steps == 0:
@@ -121,18 +122,19 @@ for idx in indices:
     video_frequency = int(0.1 * exp.total_steps)
     video_length = 1_000
 
-    with open(path + '/hypers.json', 'w') as f:
-        hypers["run"] = run
-        json.dump(hypers, f, indent=2)
+    if save_video:
+        with open(path + '/hypers.json', 'w') as f:
+            hypers["run"] = run
+            json.dump(hypers, f, indent=2)
 
-    rgb_array = env.render()
-    image = Image.fromarray(rgb_array)
-    image = image.resize((rgb_array.shape[1] * 10, rgb_array.shape[0] * 10), Image.Resampling.NEAREST)
-    image.save(path + f"/env.png")
+        rgb_array = env.render()
+        image = Image.fromarray(rgb_array)
+        image = image.resize((rgb_array.shape[1] * 10, rgb_array.shape[0] * 10), Image.Resampling.NEAREST)
+        image.save(path + f"/env.png")
     
     avg_reward = 0.
 
-    for step in tqdm(range(glue.total_steps, exp.total_steps)):
+    for step in tqdm(range(glue.total_steps, exp.total_steps), miniters=1000):
         collector.next_frame()
         chk.maybe_save()
         interaction = glue.step()
@@ -147,20 +149,22 @@ for idx in indices:
 
             logger.debug(f'{step} {avg_reward} {avg_time:.4}ms {int(fps)}')
 
-        if step > 899999 and step % video_frequency < video_length or (exp.total_steps - 1) - step < video_length:
-            rgb_array = env.render()
-            image = Image.fromarray(rgb_array)
-            image = image.resize((rgb_array.shape[1] // 2, rgb_array.shape[0] // 2), Image.Resampling.NEAREST)
-            frame = np.array(image)
-            recorded_frames.append(frame)
-        elif step % video_frequency == video_length and len(recorded_frames) > 0:
-            clip = ImageSequenceClip(recorded_frames, fps=8)
-            clip.write_videofile(path + f"/{step - video_length}-{step - 1}.mp4")
-            recorded_frames = []
+        if save_video:
+            if step > 899999 and step % video_frequency < video_length or (exp.total_steps - 1) - step < video_length:
+                rgb_array = env.render()
+                image = Image.fromarray(rgb_array)
+                image = image.resize((rgb_array.shape[1] // 2, rgb_array.shape[0] // 2), Image.Resampling.NEAREST)
+                frame = np.array(image)
+                recorded_frames.append(frame)
+            elif step % video_frequency == video_length and len(recorded_frames) > 0:
+                clip = ImageSequenceClip(recorded_frames, fps=8)
+                clip.write_videofile(path + f"/{step - video_length}-{step - 1}.mp4")
+                recorded_frames = []
 
-    if len(recorded_frames) > 0:
-        clip = ImageSequenceClip(recorded_frames, fps=8)
-        clip.write_videofile(path + f"/{exp.total_steps - video_length}-{exp.total_steps - 1}.mp4")
+    if save_video:
+        if len(recorded_frames) > 0:
+            clip = ImageSequenceClip(recorded_frames, fps=8)
+            clip.write_videofile(path + f"/{exp.total_steps - video_length}-{exp.total_steps - 1}.mp4")
 
 
     collector.reset()

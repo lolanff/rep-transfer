@@ -1,0 +1,61 @@
+{
+    "agent": "DRQN-FTA-Gridworld-85",
+    "problem": "GridworldPartial",
+    "total_steps": 100000,
+    "episode_cutoff": 100,
+    "metaParameters": {
+        "experiment": {
+            "load": {
+                "path": "results/Gridworld/A4/P2/gridworldpartial_drqn_2_16_pretrain/DRQN-FTA-GridworldPartial",
+                "config": {
+                    "a": {
+                        "buffer": false,
+                        "state": {
+                            "optim": false,
+                            "params": {
+                                "phi": true,
+                                "q": false
+                            },
+                            "target_params": {
+                                "phi": true,
+                                "q": false
+                            }
+                        }
+                    }
+                }
+            },
+            "save": false,
+            "seed_offset": 30000
+        },
+        "epsilon": 0.1,
+        "target_refresh": 64,
+        "buffer_type": "rnn_uniform",
+        "buffer_size": 10000,
+        "batch": 2,
+        "n_step": 1,
+        "update_freq": 1,
+        "sequence_length": 16,
+        "train_use_all_steps": true,
+        "normalizer": {
+            "state": {
+                "coeff": 255.0
+            }
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": 0.0003,
+            "beta1": 0.9,
+            "beta2": 0.999
+        },
+        "representation": {
+            "type": "MazeGRUNetFTA",
+            "hidden": 32,
+            "eta": 0.2,
+            "frozen": true
+        },
+        "environment": {
+            "goal_id": "85",
+            "fov": 5
+        }
+    }
+}

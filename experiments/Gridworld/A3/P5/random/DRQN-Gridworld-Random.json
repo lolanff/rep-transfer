@@ -15,7 +15,7 @@
         "buffer_size": 100000,
         "batch": 1,
         "n_step": 1,
-        "update_freq": 1,
+        "update_freq": 100000,
         "sequence_length": 100,
         "train_use_all_steps": false,
         "normalizer": {

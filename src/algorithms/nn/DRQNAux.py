@@ -1,7 +1,7 @@
 from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Tuple
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from ReplayTables.ReplayBuffer import Batch, LaggedTimestep
 from jax.tree_util import tree_flatten
 

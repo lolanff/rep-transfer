@@ -6,7 +6,7 @@ import utils.chex as cxu
 
 from abc import abstractmethod
 from typing import Any, Dict, Tuple
-from PyExpUtils.collection.Collector import Collector
+from ml_instrumentation.Collector import Collector
 from ReplayTables.interface import Timestep
 from ReplayTables.registry import build_buffer
 
@@ -47,6 +47,7 @@ class NNAgent(BaseAgent):
         # -- NN Architecture --
         # ---------------------
         builder = NetworkBuilder(observations, self.rep_params, seed)
+        self.head = params.get('head', "MultiLayerHead")
         self._build_heads(builder)
         if len(observations) > 3:
             self.phi = builder.getRecurrentFeatureFunction()

@@ -1,0 +1,39 @@
+{
+    "agent": "DRQN-3",
+    "problem": "ForagerTwoBiomeLarge",
+    "total_steps": 500000,
+    "episode_cutoff": -1,
+    "metaParameters": {
+        "head": "Linear",
+        "loss": "huber",
+        "epsilon_init": 1,
+        "epsilon_final": 0.05,
+        "epsilon_steps": 400000,
+        "target_refresh": 1,
+        "buffer_type": "rnn_uniform",
+        "buffer_size": 10000,
+        "batch": 8,
+        "gamma": 0.99,
+        "n_step": 1,
+        "update_freq": 4,
+        "sequence_length": 128,
+        "burn_in_steps": 127,
+        "environment": {
+            "aperture": 3
+        },
+        "experiment": {
+            "seed_offset": 10000
+        },
+        "optimizer": {
+            "name": "ADAM",
+            "alpha": 0.0003,
+            "beta1": 0.9,
+            "beta2": 0.999,
+            "eps": 0.01
+        },
+        "representation": {
+            "type": "ForagerGRUNetReLU",
+            "hidden": 64
+        }
+    }
+}

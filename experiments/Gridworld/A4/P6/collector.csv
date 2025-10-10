@@ -1,0 +1,7 @@
+,Environment,Algorithm,Goal,Steps,Run,AUC,Return,Successes
+0,DQN-ReLU-Gridworld-0.json,DQN-ReLU-Gridworld-0,0,100000,0,7.63,3008.0,1.0
+1,DQN-ReLU-GridworldPartial-0.json,DQN-ReLU-GridworldPartial-0,0,100000,0,5.989999999999999,1176.0,0.6632653061224489
+2,DQN-ReLU-GridworldPartial-0.json,DQN-ReLU-GridworldPartial-0,0,100000,3,6.26,1360.0,0.7393162393162394
+3,DQN-ReLU-GridworldPartial-0.json,DQN-ReLU-GridworldPartial-0,0,100000,1,5.759999999999999,1093.0,0.7083333333333334
+4,DQN-ReLU-GridworldPartial-0.json,DQN-ReLU-GridworldPartial-0,0,100000,4,5.329999999999999,1061.0,0.7136363636363636
+5,DQN-ReLU-GridworldPartial-0.json,DQN-ReLU-GridworldPartial-0,0,100000,2,6.96,1384.0,0.6582914572864321
