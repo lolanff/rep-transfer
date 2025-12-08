@@ -62,6 +62,8 @@ class DRQN(NNAgent):
             optim=self.state.optim,
         )
 
+    def get_feature_function(self, builder: NetworkBuilder):
+        return builder.getRecurrentFeatureFunction()
     # ------------------------
     # -- NN agent interface --
     # ------------------------
@@ -260,7 +262,7 @@ class DRQN(NNAgent):
                 'carry': carry,
                 'carryp': self.carry,
                 'reset': True,
-                'pos': None
+                'pos': (-1,-1)
                 }
         ))
 

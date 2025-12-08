@@ -24,6 +24,8 @@ class CarryBatch(NamedTuple):
     carryp: np.ndarray
     reset: np.ndarray
     pos: np.ndarray
+    last_action_encoded: np.ndarray
+    last_reward: np.ndarray
     
 class RNNReplayBuffer(ReplayBuffer):
     def __init__(
@@ -68,12 +70,21 @@ class RNNReplayBuffer(ReplayBuffer):
         term = self._storage._term[idxs].reshape(n, sequence_length)
 
         extras = self._storage._extras
-        carry, carryp, reset, pos = zip(*((extras[i]['carry'], extras[i]['carryp'], extras[i]['reset'], extras[i]['pos']) for i in idxs))
+        carry, carryp, reset, pos, last_action_encoded, last_reward = zip(*((extras[i]['carry'], extras[i]['carryp'], extras[i]['reset'], extras[i]['pos'], extras[i].get('last_action_encoded'), extras[i].get('last_reward')) for i in idxs))
 
         carry = np.array(carry).reshape(n, sequence_length, -1)
         carryp = np.array(carryp).reshape(n, sequence_length, -1)
         reset = np.array(reset).reshape(n, sequence_length)
+        
+        # Handle None values in pos by replacing them with default position arrays
+        pos = [p if p is not None else np.array([-1, -1]) for p in pos]
         pos = np.array(pos).reshape(n, sequence_length, -1)
+        
+        # Handle None values in last_action_encoded and last_reward
+        last_action_encoded = [lae if lae is not None else np.array([0.0]) for lae in last_action_encoded]
+        last_reward = [lr if lr is not None else 0.0 for lr in last_reward]
+        last_action_encoded = np.array(last_action_encoded).reshape(n, sequence_length, -1)
+        last_reward = np.array(last_reward).reshape(n, sequence_length)
 
         return CarryBatch(
             x=x,
@@ -86,5 +97,7 @@ class RNNReplayBuffer(ReplayBuffer):
             carry=carry,
             carryp=carryp,
             reset=reset,
-            pos=pos
+            pos=pos,
+            last_action_encoded=last_action_encoded,
+            last_reward=last_reward
         )

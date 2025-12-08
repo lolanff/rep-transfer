@@ -1,7 +1,22 @@
 from environments.GridworldGoal import GridHardRGBGoal
+from environments.Gridworld import GridHardXY, GridHardRGB
+from environments.GridworldGoal import GridHardRGBGoal
+from environments.GridworldPartial import GridHardRGBGoalPartial
 from environments.TMaze import TMaze
 import numpy as np
 import copy
+import matplotlib.pyplot as plt
+
+def test_gridhardrgb_sr():
+    env = GridHardRGBGoalPartial(goal_id=0, fov=5)
+    print(env.get_optimal_policy().reshape(env.state_dim[0], env.state_dim[1]))
+    sr = env.get_similarity_ranks()
+    print(sr)
+    plt.imshow(sr, cmap='hot', aspect='auto')
+    plt.colorbar()
+    plt.title('Successor Representation')
+    plt.savefig('sr_heatmap.png')
+    print("Heatmap saved to sr_heatmap.png")
 
 def test_gridworld_goals():
     env = GridHardRGBGoal("-1")

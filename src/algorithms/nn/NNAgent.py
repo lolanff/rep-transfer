@@ -36,9 +36,9 @@ class NNAgent(BaseAgent):
         self.is_epsilon_decay = False
         if self.epsilon is None:
             self.is_epsilon_decay = True
-            self.epsilon_init = params["epsilon_init"]
-            self.epsilon_final = params["epsilon_final"]
-            self.epsilon_steps = params["epsilon_steps"]
+            self.epsilon_init = params.get('epsilon_init')
+            self.epsilon_final = params.get('epsilon_final')
+            self.epsilon_steps = params.get('epsilon_steps')
             self.epsilon = self.epsilon_init
 
         self.reward_clip = params.get('reward_clip', 0)
@@ -49,10 +49,7 @@ class NNAgent(BaseAgent):
         builder = NetworkBuilder(observations, self.rep_params, seed)
         self.head = params.get('head', "MultiLayerHead")
         self._build_heads(builder)
-        if len(observations) > 3:
-            self.phi = builder.getRecurrentFeatureFunction()
-        else:
-            self.phi = builder.getFeatureFunction()
+        self.phi = self.get_feature_function(builder)
         net_params = builder.getParams()
 
         # ---------------
@@ -62,20 +59,23 @@ class NNAgent(BaseAgent):
             self.optimizer_params['alpha'],
             self.optimizer_params['beta1'],
             self.optimizer_params['beta2'],
+            1e-5
         )
         opt_state = self.optimizer.init(net_params)
 
         # ------------------
         # -- Data ingress --
         # ------------------
-        self.buffer_size = params['buffer_size']
-        self.batch_size = params['batch']
+        self.buffer_size = params.get('buffer_size', 1024)
+        self.batch_size = params.get('batch', 32)
         self.update_freq = params.get('update_freq', 1)
         self.sequence_length = params.get('sequence_length', 1)
 
         self.normalizer_params = params.get('normalizer', {})
 
-        self.buffer = RNNReplayBuffer(self.buffer_size, self.n_step, self.rng, self.sequence_length) if params['buffer_type'] == 'rnn_uniform' else build_buffer(
+        self.buffer = None
+        if 'buffer_type' in params:
+            self.buffer = RNNReplayBuffer(self.buffer_size, self.n_step, self.rng, self.sequence_length) if params['buffer_type'] == 'rnn_uniform' else build_buffer(
             buffer_type=params['buffer_type'],
             max_size=self.buffer_size,
             lag=self.n_step,
@@ -94,6 +94,9 @@ class NNAgent(BaseAgent):
         self.steps = 0
         self.updates = 0
         self.is_successful = False
+        
+    def get_feature_function(self, builder: NetworkBuilder):
+        return builder.getFeatureFunction()
 
     # ------------------------
     # -- NN agent interface --

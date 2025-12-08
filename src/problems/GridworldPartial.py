@@ -8,7 +8,8 @@ class GridworldPartial(BaseProblem):
         super().__init__(exp, idx, collector)
 
         fov = self.env_params.get('fov',5)
-        self.env = Env(self.env_params.get('goal_id',0), fov, self.seed)
+        repeat = self.env_params.get('repeat',(1,1))
+        self.env = Env(self.env_params.get('goal_id',0), fov, repeat=repeat, seed=self.seed)
         self.actions = 4
         self.observations = (fov, fov, 3)
         self.gamma = 0.99

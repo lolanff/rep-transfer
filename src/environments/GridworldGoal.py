@@ -20,15 +20,17 @@ class GridHardXYGoal(GridHardXY):
         self.goal_x, self.goal_y = self.goals[goal_id]
 
 class GridHardRGBGoal(GridHardRGB):
-    def __init__(self, goal_id, seed=np.random.randint(int(1e5))):
-        super().__init__(seed)
-        data_path = os.path.dirname(os.path.abspath(__file__)) + "/env_data/sim2coord.json"
+    def __init__(self, goal_id, repeat=(1,1), goal_original=(9,9), seed=np.random.randint(int(1e5))):
+        super().__init__(repeat=repeat, goal=goal_original, seed=seed)
+        assert int(goal_id) <= self.get_num_states() - 1 or goal_id == "-1"
         if goal_id == "-1":
             self.goal_x, self.goal_y = -1, -1
+        elif int(goal_id) == 0:
+            pass
         else:
-            with open(data_path, 'r') as f:
-                self.goals = json.load(f)
-            self.goal_x, self.goal_y = self.goals[goal_id]
+            ranking = self.get_similarity_ranks()
+            indices_tuple = np.where(ranking==int(goal_id))
+            self.goal_x, self.goal_y = indices_tuple[0][0], indices_tuple[1][0]
 
 class GridHardRGBGoalAll(GridHardRGB):
     def __init__(self, goal_id, seed=np.random.randint(int(1e5))):

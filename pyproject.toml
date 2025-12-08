@@ -21,15 +21,16 @@ dependencies = [
     # custom minatar with jit compiled environments
     'MinAtar @ git+https://github.com/andnp/MinAtar',
     'foragerenv @ git+https://github.com/steventango/forager',
-    'gymnasium[atari, box2d]>=1.0.0',
+    "polars==1.28.1",
+    "pandas",
+    "gymnasium[box2d,other]>=1.0.0",
     'gym-minigrid',
     'minigrid',
     'optuna',
-    'ale_py',
     'pillow',
     'numba>=0.55.0',
     'chex>=0.1.5',
-    'jax>=0.2.14',
+    'jax[cuda12]>=0.2.14',
     'dm-haiku>=0.0.4',
     'optax>=0.0.8',
     'numpy~=2.1.0',
@@ -41,7 +42,7 @@ dependencies = [
     'RlEvaluation~=1.0',
     'PyExpPlotting-andnp',
     'matplotlib',
-    "ml-instrument>=0.3.1",
+    "ml-instrument~=0.5.0",
     'moviepy',
 ]
 

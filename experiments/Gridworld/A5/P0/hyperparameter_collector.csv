@@ -1,0 +1,2 @@
+,Environment,Algorithm,AUC,Return,Successes,clip_epsilon,entropy_cost,environment.goal_id,experiment.load,experiment.seed_offset,gae_lambda,mini_batch_size,normalizer.state.coeff,optimizer.alpha,optimizer.beta1,optimizer.beta2,optimizer.name,ppo_epochs,representation.actions,representation.frozen,representation.hidden,representation.type,rollout_steps
+0,ppo,ppo,6.556,1854.0,0.0,0.2,0.1,0,0,0,0.95,64,255.0,0.001,0.9,0.999,ADAM,4,4,0,32,MazeARNet,2048

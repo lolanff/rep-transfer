@@ -12,6 +12,9 @@ results_old/
 ENV/
 env/
 .venv/
+.nv/
+.local/
+.python_history
 
 # ignore python caches
 .pytest_cache

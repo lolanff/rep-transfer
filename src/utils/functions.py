@@ -37,7 +37,7 @@ def fta(x: ArrayLike, eta: float = 2, tiles: int = 20, lower_bound: float = -20,
     c = c[None, :]
     x = x[..., None]
     z = 1 - fuzzy_indicator_function(relu(c - x) + relu(x - delta - c), eta)
-    z = z.reshape(x.shape[0], -1)
+    z = z.reshape(*x.shape[:-1], -1)
     return z
 
 @jax.jit

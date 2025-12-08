@@ -4,11 +4,69 @@ from pathlib import Path
 from PyExpUtils.models.ExperimentDescription import ExperimentDescription, loadExperiment
 from PyExpUtils.results.tools import getHeader, getParamsAsDict
 from PyExpUtils.results.indices import listIndices
-from ml_instrumentation.reader import load_all_results, get_run_ids
-
+from typing import Any
+import connectorx as cx
+from sqlite3 import Cursor
+from functools import reduce
+import sqlite3
 import polars as pl
 from typing import TypeVar, Generic
+import time
+
 Exp = TypeVar('Exp', bound=ExperimentDescription)
+
+def maybe_quote(v: Any):
+    if isinstance(v, str):
+        return quote(v)
+    return v
+
+def quote(s: str):
+    return f'"{s}"'
+
+def get_tables(cur: Cursor) -> set[str]:
+    cur.row_factory = None
+    res = cur.execute("SELECT name FROM sqlite_master")
+    return set(r[0] for r in res.fetchall())
+
+def get_run_ids(db_path: str | Path, params: dict[str, Any]):
+    meta = cx.read_sql(f'sqlite://{db_path}', 'SELECT * FROM _metadata_', return_type='polars')
+
+    f = pl.lit(True)
+    for k, v in params.items():
+        f = f & (pl.col(k) == v)
+
+    return meta.filter(f)['id'].to_list()
+
+def read_metrics(db_path: str | Path, metrics: Iterable[str], ids: Iterable[int] | None = None):
+    dfs = list(map(lambda m: read_to_df(db_path, m, ids), metrics))
+    df = reduce(lambda df1, df2: df1.join(df2, how='full', on=['id', 'frame'], coalesce=True), dfs)
+    df = df.sort('frame')
+    return df
+
+def read_to_df(db_path: str | Path, metric: str, ids: Iterable[int] | None = None):
+    db_path = Path(db_path)
+    constraints = ''
+    if ids is not None:
+        str_ids = map(str, map(maybe_quote, ids))
+        constraints = f'WHERE id IN ({",".join(str_ids)})'
+    query = f'SELECT * FROM {metric} {constraints}'
+    df = cx.read_sql(f'sqlite://{db_path}', query, partition_on='id', partition_num=1, return_type='polars')
+    df = df.rename({'measurement': metric})
+    return df.lazy()
+
+def load_all_results(db_path: str | Path, metrics: Iterable[str] | None = None, ids: Iterable[int] | None = None):
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+    tables = get_tables(cur)
+    if metrics is None:
+        metrics = tables - {'_metadata_'}
+    df = read_metrics(db_path, metrics, ids)
+    if '_metadata_' not in tables:
+        return df.collect()
+
+    meta = cx.read_sql(f'sqlite://{db_path}', 'SELECT * FROM _metadata_', return_type='polars', partition_on='id', partition_num=1)
+    meta = meta.lazy()
+    return df.join(meta, how='left', on=['id']).collect()
 
 class Result(Generic[Exp]):
     def __init__(self, exp_path: str | Path, exp: Exp, metrics: Sequence[str] | None = None):
@@ -22,15 +80,33 @@ class Result(Generic[Exp]):
         if not Path(db_path).exists():
             return None
 
-        dfs: list[pl.DataFrame] = []
+        print(f'Loading {self.filename}...', end='', flush=True)
+        start = time.time()
+        try:
+            meta = cx.read_sql(f'sqlite://{db_path}', 'SELECT * FROM _metadata_', return_type='polars')
+            print(' done! ', end='', flush=True)
+        except Exception:
+            # table might not exist
+            return None
+
+        all_run_ids = []
         for param_id in range(self.exp.numPermutations()):
             params = getParamsAsDict(self.exp, param_id)
-            run_ids = get_run_ids(db_path, params)
 
-            df = load_all_results(db_path, self.metrics, run_ids)
-            dfs.append(df)
+            filt = meta
+            for k, v in params.items():
+                filt = filt.filter(pl.col(k) == v)
 
-        return pl.concat(dfs)
+            run_ids = filt['id'].to_list()
+            all_run_ids.extend(run_ids)
+
+        if not all_run_ids:
+            return None
+        print(f' found {len(all_run_ids)} runs. Loading metrics...', end='', flush=True)
+        df = load_all_results(db_path, self.metrics, all_run_ids)
+        end = time.time()
+        print(f' done! Took {end - start:.2f}s for {len(all_run_ids)} runs')
+        return df
 
     @property
     def filename(self):

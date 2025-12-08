@@ -1,0 +1,21 @@
+,algorithm,seed,State Awareness
+0,DQN-FTA-GridworldPartial,0,0.0
+1,DQN-FTA-GridworldPartial,1,0.0
+2,DQN-FTA-GridworldPartial,2,0.0
+3,DQN-FTA-GridworldPartial,3,0.0
+4,DQN-FTA-GridworldPartial,4,0.0
+5,DQN-ReLU-GridworldPartial,0,0.0
+6,DQN-ReLU-GridworldPartial,1,0.0
+7,DQN-ReLU-GridworldPartial,2,0.0
+8,DQN-ReLU-GridworldPartial,3,0.0
+9,DQN-ReLU-GridworldPartial,4,0.0
+10,DRQN-FTA-GridworldPartial,0,0.26884818
+11,DRQN-FTA-GridworldPartial,1,0.26637816
+12,DRQN-FTA-GridworldPartial,2,0.24721958
+13,DRQN-FTA-GridworldPartial,3,0.2338174
+14,DRQN-FTA-GridworldPartial,4,0.23145773
+15,DRQN-ReLU-GridworldPartial,0,0.3723628
+16,DRQN-ReLU-GridworldPartial,1,0.34522432
+17,DRQN-ReLU-GridworldPartial,2,0.29383737
+18,DRQN-ReLU-GridworldPartial,3,0.2737189
+19,DRQN-ReLU-GridworldPartial,4,0.28934714

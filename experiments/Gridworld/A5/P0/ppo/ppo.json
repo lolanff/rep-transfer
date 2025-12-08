@@ -1,0 +1,38 @@
+{
+	"agent": "PPO-ReLU-A",
+	"problem": "GridworldPartial",
+	"total_steps": 100000,
+	"episode_cutoff": 100,
+	"metaParameters": {
+		"experiment": {
+			"load": false,
+			"seed_offset": 0
+		},
+        "ppo_epochs": 4,
+        "mini_batch_size": 64,
+        "clip_epsilon": 0.2,
+        "gae_lambda": 0.95,
+		"rollout_steps": 2048,
+		"entropy_coef": [0.0, 0.001, 0.01, 0.1, 1.0],
+		"normalizer": {
+			"state": {
+				"coeff": 255.0
+			}
+		},
+		"optimizer": {
+			"name": "ADAM",
+			"alpha": [0.001, 0.0003, 0.0001, 0.00003, 0.00001],
+			"beta1": 0.9,
+			"beta2": 0.999
+		},
+		"representation": {
+			"type": "MazeARNet",
+			"actions": 4,
+			"hidden": 32,
+			"frozen": false
+		},
+		"environment": {
+			"goal_id": "0"
+		}
+	}
+}
